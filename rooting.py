@@ -1,18 +1,37 @@
 import sys
 import os
 import argparse
-import treeswift
+import dendropy
 import numpy as np
 
 
 def main(args):
+    input_path = args.input
+    output_path = args.output
+    mode = args.mode
+
+    gene_trees = dendropy.TreeList.get(path=input_path, schema='newick', rooting="default-unrooted") #suppress_edge_lengths=True
+    for g in gene_trees:
+         print(g.as_string(schema='newick'))
+         print(g.as_ascii_plot())
+    #print(gene_trees.read_from_path(input_path, schema="newick"))
+    # print(trees)
+    #tree.deroot()
+    #leaf_dict = tree.label_to_node(selection='leaves')
+
     return
-  # compute gene tree distribution
-  # score the distribution
-  # return the rooted tree
+    # read data
+    # compute gene tree distribution
+    # score the distribution
+    # return the rooted tree
 
 
 def root(u_distribution):
+    return
+
+def invariants(r):
+    # todo returns the set of invariants of this rooted tree using table 5 of allman's paper
+    # this doesn't have to be a function, but can be a lookup table as well
     return
 
 def score(r, u_distribution):
@@ -20,10 +39,31 @@ def score(r, u_distribution):
 
 def tree_shape(u_distribution):
     # sort the u values
-    # kernel density estimation
+    # clustering
+    # find the clusters in the u-distriution and the sizes of these clusters
+    # if smallest class size == 8, then the tree is pseudo_caterpillar
+    # if the class of the second smallest prob was 4 then balanced otherwise caterpillar
     return
 
 def branch_lengths():
+    # todo: this function doesn't seem to be working for complicated equations
+    from sympy import solve, Poly, Eq, Function, exp, Symbol
+    from sympy.abc import x, y, z, a, b
+    #x, y, z = Symbol('x'), Symbol('y'), Symbol('z')
+    u = gen_caterpillar()
+    print(u*100)
+    print(np.sum(u))
+    print(solve([1 - 2/3*x - 2/3*y + 1/3*x*y + 1/18*x*y**3 + 1/90*x*y**3*z**6 - u[1],
+                1/3*y - 1/6*x*y - 1/9*x*y**3 + 1/90*x*y**3*z**6 - u[2],
+                1/3*y - 1/6*x*y - 1/18*x*y**3 - 2/45*x*y**3*z**6 - u[3],
+                1/3*x - 1/3*x*y + 1/18*x*y**3 + 1/90*x*y**3*z**6 - u[4],
+                1/6*x*y - 1/9*x*y**3 + 1/90*x*y**3*z**6 - u[5],
+                1/6*x*y - 1/18*x*y**3 - 2/45*x*y**3*z**6 - u[6],
+                1/18*x*y**3 + 1/90*x*y**3*z**6 - u[7]]))
+    #print(solve([x**2 - 1,
+    #            y-x + 3]))
+    #solve([x**2 - 3, y - 1], set=True)
+    #print(x, y)
     return
 
 def gen_caterpillar(x=0.1, y=0.2, z=0.3):
@@ -57,25 +97,19 @@ def gen_pseudo_caterpillar(x=0.1, y=0.2, z=0.3):
 
 
 def parse_args():
-    return
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("-i", "--input", type=str, help="Input file name (5-taxon gene trees)",
+                        required=True, default=None)
+
+    parser.add_argument("-o", "--output", type=str, help="Output file name (5-taxon species tree)",
+                        required=True, default=None)
+
+    parser.add_argument("-m", "--mode", type=str, choices=["n", "c"], help="Scoring algorithm mode, 'n' for naive scoring, 'c' for clustering",
+                        required=False, default="n")
+
+    return parser.parse_args()
 
 
 if __name__ == "__main__":
-    #main(parse_args())
-    from sympy import solve, Poly, Eq, Function, exp, Symbol
-    from sympy.abc import x, y, z, a, b
-    #x, y, z = Symbol('x'), Symbol('y'), Symbol('z')
-    u = gen_caterpillar()
-    print(u*100)
-    print(np.sum(u))
-    print(solve([1 - 2/3*x - 2/3*y + 1/3*x*y + 1/18*x*y**3 + 1/90*x*y**3*z**6 - u[1],
-                1/3*y - 1/6*x*y - 1/9*x*y**3 + 1/90*x*y**3*z**6 - u[2],
-                1/3*y - 1/6*x*y - 1/18*x*y**3 - 2/45*x*y**3*z**6 - u[3],
-                1/3*x - 1/3*x*y + 1/18*x*y**3 + 1/90*x*y**3*z**6 - u[4],
-                1/6*x*y - 1/9*x*y**3 + 1/90*x*y**3*z**6 - u[5],
-                1/6*x*y - 1/18*x*y**3 - 2/45*x*y**3*z**6 - u[6],
-                1/18*x*y**3 + 1/90*x*y**3*z**6 - u[7]]))
-    #print(solve([x**2 - 1,
-    #            y-x + 3]))
-    #solve([x**2 - 3, y - 1], set=True)
-    #print(x, y)
+    main(parse_args())
