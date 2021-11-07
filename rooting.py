@@ -10,10 +10,44 @@ def main(args):
     output_path = args.output
     mode = args.mode
 
-    gene_trees = dendropy.TreeList.get(path=input_path, schema='newick', rooting="default-unrooted") #suppress_edge_lengths=True
+    gene_trees = dendropy.TreeList.get(path=input_path, schema='newick', rooting="default-unrooted",
+                                        suppress_edge_lengths=False)
+
+    gene_trees.write_to_path(dest='test.tre', schema='newick', suppress_edge_lengths=True,
+                                suppress_internal_node_labels=True) # todo this should be done in the data generation file?
+                                #or maybe not? since other methods need the rooted version
+
+
+    #gene_trees[0].encode_bipartitions()
+    #gene_trees[1].encode_bipartitions()
+    # print(gene_trees[1].as_string(schema='newick'))
+    #print(gene_trees[1].as_string(schema='newick'))
+    #  = dendropy.calculate.treecompare.find_missing_bipartitions(gene_trees[0], gene_trees[1])
+    # d = dendropy.calculate.treecompare.symmetric_difference(gene_trees[0], gene_trees[1])
+    #for c1 in c:
+    #    print(c1)
+
+    tns = dendropy.TaxonNamespace()
+    quintets = dendropy.TreeList.get(path='quintets.tre', schema='newick', taxon_namespace=tns)
+    gene_trees = dendropy.TreeList.get(path='test.tre', schema='newick', taxon_namespace=tns)
+    u_count = np.zeros(len(quintets))
+
     for g in gene_trees:
-         print(g.as_string(schema='newick'))
-         print(g.as_ascii_plot())
+        #print(g)
+        for i in range(len(quintets)):
+            d = dendropy.calculate.treecompare.symmetric_difference(quintets[i], g)
+            if d == 0:
+                #print(i)
+                #print('found quintet', quintets[i])
+                u_count[i] += 1
+                break
+
+    u_distribution = u_count / len(gene_trees)
+    print(u_distribution)
+    print(np.sum(u_distribution))
+    # print(d)
+    # print(gene_trees[0].as_string(schema='newick'))
+
     #print(gene_trees.read_from_path(input_path, schema="newick"))
     # print(trees)
     #tree.deroot()
