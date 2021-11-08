@@ -17,7 +17,6 @@ def main(args):
                                 suppress_internal_node_labels=True) # todo this should be done in the data generation file?
                                 #or maybe not? since other methods need the rooted version
 
-
     #gene_trees[0].encode_bipartitions()
     #gene_trees[1].encode_bipartitions()
     # print(gene_trees[1].as_string(schema='newick'))
@@ -44,9 +43,20 @@ def main(args):
 
     u_distribution = u_count / len(gene_trees)
     print(u_distribution)
+    print(u_count)
     print(np.sum(u_distribution))
-    # print(d)
-    # print(gene_trees[0].as_string(schema='newick'))
+
+    pseudo_caterpillars = dendropy.TreeList.get(path='pseudo_caterpillar.tre', schema='newick', taxon_namespace=tns)
+    print(str(pseudo_caterpillars[0]))
+    print(str(pseudo_caterpillars[1]))
+    print(tns)
+    map = taxon_set_map(pseudo_caterpillars[0], pseudo_caterpillars[1], tns)
+    print(map)
+    q_mapped = quintets_map(quintets, tns, map)
+    for q in q_mapped:
+        print(q)
+    #for i in range(len(tns)):
+    #    x =
 
     #print(gene_trees.read_from_path(input_path, schema="newick"))
     # print(trees)
@@ -54,11 +64,35 @@ def main(args):
     #leaf_dict = tree.label_to_node(selection='leaves')
 
     return
-    # read data
-    # compute gene tree distribution
     # score the distribution
     # return the rooted tree
 
+def quintets_map(quintets, tns, map):
+    q_mapped = quintets.clone()
+    mapped_indices = np.zeros(len(quintets), dtype=int)
+
+    for i in range(len(quintets)):
+        q_mapped_str = str(quintets[i])
+        for j in range(len(map)):
+            idx = str(q_mapped[i]).index(str(tns[j]).replace('\'', ''))
+            q_mapped_str = q_mapped_str[:idx] + str(map[j]).replace('\'', '') + q_mapped_str[idx+1:]
+
+        q_mapped[i] = dendropy.Tree.get(data=q_mapped_str+';', schema="newick")
+        for k in range(len(quintets)):
+            d = dendropy.calculate.treecompare.symmetric_difference(quintets[k], q_mapped[i])
+            if d == 0:
+                mapped_indices[i] = k
+                break
+
+    print(mapped_indices)
+    return q_mapped
+
+def taxon_set_map(t1, t2, tns):
+    map = ['0']*5
+    for i in range(len(tns)):
+        idx  = str(t1).index(str(tns[i]).replace('\'', ''))
+        map[i] = str(t2)[idx]
+    return map
 
 def root(u_distribution):
     return
@@ -99,6 +133,9 @@ def branch_lengths():
     #solve([x**2 - 3, y - 1], set=True)
     #print(x, y)
     return
+
+# can use these functions to know how far ui values are from
+# where they should be
 
 def gen_caterpillar(x=0.1, y=0.2, z=0.3):
     u = np.zeros(16)
