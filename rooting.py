@@ -29,7 +29,7 @@ def main(args):
     #    print(c1)
 
     tns = dendropy.TaxonNamespace()
-    quintets = dendropy.TreeList.get(path='quintets.tre', schema='newick', taxon_namespace=tns)
+    quintets = dendropy.TreeList.get(path='topologies/quintets.tre', schema='newick', taxon_namespace=tns)
     gene_trees = dendropy.TreeList.get(path='test.tre', schema='newick', taxon_namespace=tns)
     u_count = np.zeros(len(quintets))
 
@@ -48,7 +48,7 @@ def main(args):
     print(u_count)
     print(np.sum(u_distribution))
 
-    pseudo_caterpillars = dendropy.TreeList.get(path='pseudo_caterpillar.tre', schema='newick', taxon_namespace=tns)
+    pseudo_caterpillars = dendropy.TreeList.get(path='topologies/pseudo_caterpillar.tre', schema='newick', taxon_namespace=tns)
     print(str(pseudo_caterpillars[0]))
     print(str(pseudo_caterpillars[1]))
     for p in pseudo_caterpillars:
