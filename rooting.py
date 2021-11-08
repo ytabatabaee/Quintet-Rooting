@@ -4,6 +4,8 @@ import argparse
 import dendropy
 import numpy as np
 
+MAX_NUM_INVARIANT = 10
+
 
 def main(args):
     input_path = args.input
@@ -49,12 +51,9 @@ def main(args):
     pseudo_caterpillars = dendropy.TreeList.get(path='pseudo_caterpillar.tre', schema='newick', taxon_namespace=tns)
     print(str(pseudo_caterpillars[0]))
     print(str(pseudo_caterpillars[1]))
-    print(tns)
-    map = taxon_set_map(pseudo_caterpillars[0], pseudo_caterpillars[1], tns)
-    print(map)
-    q_mapped = quintets_map(quintets, tns, map)
-    for q in q_mapped:
-        print(q)
+    for p in pseudo_caterpillars:
+        print(p)
+        print(score(p, pseudo_caterpillars[0], u_distribution, tns, quintets, "p"))
     #for i in range(len(tns)):
     #    x =
 
@@ -84,8 +83,7 @@ def quintets_map(quintets, tns, map):
                 mapped_indices[i] = k
                 break
 
-    print(mapped_indices)
-    return q_mapped
+    return mapped_indices
 
 def taxon_set_map(t1, t2, tns):
     map = ['0']*5
@@ -97,13 +95,52 @@ def taxon_set_map(t1, t2, tns):
 def root(u_distribution):
     return
 
-def invariants(r):
-    # todo returns the set of invariants of this rooted tree using table 5 of allman's paper
-    # this doesn't have to be a function, but can be a lookup table as well
-    return
+# todo returns the set of invariants of this rooted tree using table 5 of allman's paper
+# this doesn't have to be a function, but can be a lookup table as well
+def invariants(u, indices, type):
+    invariants = np.zeros(MAX_NUM_INVARIANT)
+    if type == 'c':
+        invariants[0] = u[indices[13]] - u[indices[14]]
+        invariants[1] = u[indices[10]] - u[indices[14]]
+        invariants[2] = u[indices[9]] - u[indices[14]]
+        invariants[3] = u[indices[7]] - u[indices[14]]
+        invariants[4] = u[indices[6]] - u[indices[14]]
+        invariants[5] = u[indices[5]] - u[indices[8]]
+        invariants[6] = u[indices[4]] - u[indices[11]]
+        invariants[7] = u[indices[3]] - u[indices[12]]
+        invariants[8] = u[indices[1]] - u[indices[2]] + u[indices[8]] - u[indices[11]]
+    elif type == 'b':
+        invariants[0] = u[indices[13]] - u[indices[14]]
+        invariants[1] = u[indices[10]] - u[indices[14]]
+        invariants[2] = u[indices[9]] - u[indices[14]]
+        invariants[3] = u[indices[8]] - u[indices[11]]
+        invariants[4] = u[indices[7]] - u[indices[14]]
+        invariants[5] = u[indices[6]] - u[indices[14]]
+        invariants[6] = u[indices[5]] - u[indices[11]]
+        invariants[7] = u[indices[4]] - u[indices[11]]
+        invariants[8] = u[indices[3]] - u[indices[12]]
+        invariants[9] = u[indices[1]] - u[indices[2]]
+    elif type == 'p':
+        invariants[0] = u[indices[13]] - u[indices[14]]
+        invariants[1] = u[indices[11]] - u[indices[14]]
+        invariants[2] = u[indices[9]] - u[indices[14]]
+        invariants[3] = u[indices[8]] - u[indices[14]]
+        invariants[4] = u[indices[7]] - u[indices[10]]
+        invariants[5] = u[indices[6]] - u[indices[14]]
+        invariants[6] = u[indices[5]] - u[indices[14]]
+        invariants[7] = u[indices[4]] - u[indices[14]]
+        invariants[8] = u[indices[3]] - u[indices[12]]
+        invariants[9] = u[indices[1]] - u[indices[2]]
+    else:
+        return None
+    return invariants
 
-def score(r, u_distribution):
-    return
+
+def score(r, r_base, u_distribution, tns, quintets, type):
+    map = taxon_set_map(r_base, r, tns)
+    mapped_indices = quintets_map(quintets, tns, map)
+    return np.sum(np.absolute(invariants(u_distribution, mapped_indices, type)))
+
 
 def tree_shape(u_distribution):
     # sort the u values
