@@ -21,7 +21,7 @@ $ python3 rooting.py -i input_file -o output_file -m n
 ```
 ### Extracting subtrees by taxa from larger trees
 ```
-extract-quintet.py [-h] -i INPUT -o OUTPUT -if INPUT_FILENAME [-of OUTPUT_FILENAME] -t TAXA [TAXA ...]
+extract-quintet.py [-h] -i input_folder -o output_folder -if input_filename [-of output_filename] -t taxa_list [taxa1 taxa2 ...]
 ```
 **Arguments**
 ```
