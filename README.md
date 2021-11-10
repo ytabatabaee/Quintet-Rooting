@@ -19,7 +19,7 @@ $ python3 rooting.py -i input_file -o output_file -m n
  -o, --output     inferred rooted species tree in newick format
  -m, --mode       'n' stands for naive (scoring function approach) and 'c' stands for clustering
 ```
-### Extracting subtree from larger tres by taxa
+### Extracting subtrees by taxa from larger trees
 ```
 extract-quintet.py [-h] -i INPUT -o OUTPUT -if INPUT_FILENAME [-of OUTPUT_FILENAME] -t TAXA [TAXA ...]
 ```
