@@ -5,6 +5,7 @@ import dendropy
 import numpy as np
 
 MAX_NUM_INVARIANT = 10
+CANDIDATE_SIZE = 5
 
 
 def main(args):
@@ -12,31 +13,30 @@ def main(args):
     output_path = args.output
     mode = args.mode
 
-    gene_trees = dendropy.TreeList.get(path=input_path, schema='newick', rooting="default-unrooted",
-                                        suppress_edge_lengths=False)
+    #gene_trees = dendropy.TreeList.get(path=input_path, schema='newick', rooting="default-unrooted",
+    #                                    suppress_edge_lengths=False)
 
-    gene_trees.write_to_path(dest='test.tre', schema='newick', suppress_edge_lengths=True,
-                                suppress_internal_node_labels=True) # todo this should be done in the data generation file?
-                                #or maybe not? since other methods need the rooted version
+    #gene_trees.write_to_path(dest='test.tre', schema='newick', suppress_edge_lengths=True,
+    #                            suppress_internal_node_labels=True)
 
     tns = dendropy.TaxonNamespace()
     quintets = dendropy.TreeList.get(path='topologies/quintets.tre', schema='newick', taxon_namespace=tns)
-    gene_trees = dendropy.TreeList.get(path='test.tre', schema='newick', taxon_namespace=tns)
+
+    true_species_tree = dendropy.Tree.get(path='species_tree_mapped.tre', schema='newick', taxon_namespace=tns)
+    gene_trees = dendropy.TreeList.get(path='avian_genes_mapped.tre', schema='newick', taxon_namespace=tns)
     u_count = np.zeros(len(quintets))
 
     for g in gene_trees:
-        #print(g)
         for i in range(len(quintets)):
             d = dendropy.calculate.treecompare.symmetric_difference(quintets[i], g)
             if d == 0:
-                #print(i)
-                #print('found quintet', quintets[i])
                 u_count[i] += 1
                 break
 
     u_distribution = u_count / len(gene_trees)
     print("estimated gene tree distribution")
-    print(u_distribution)
+    # print(u_distribution)
+    #print(np.sum(u_distribution))
 
     score_v = np.zeros(105)
 
@@ -52,19 +52,51 @@ def main(args):
     for i in range(len(balanced)):
         score_v[i + len(caterpillars) + len(pseudo_caterpillars)] = score(balanced[i], balanced[0], u_distribution, tns, quintets, "b")
 
+    idx = np.argpartition(score_v, CANDIDATE_SIZE)
+    #print(idx)
+    min_indices = idx[:CANDIDATE_SIZE]
+    # min_indices = np.where(score_v == score_v.min())[0]
+    #print(min_indices)
 
-    idx = np.argmin(score_v)
-    rooted = None
-    if idx < 60:
-        rooted = caterpillars[idx]
-    elif idx > 60 and idx < 75:
-        rooted = pseudo_caterpillars[idx-60]
-    elif idx > 75 and idx < 105:
-        rooted = balanced[idx-75]
+    rooted_candidates = []
+    rooted_candidate_types = []
+    r_base = []
 
-    print("infered rooted tree:", rooted)
-    print("min score", np.min(score_v))
-    print(score_v)
+    for idx in min_indices:
+        if idx < 60:
+            rooted_candidates.append(caterpillars[idx])
+            rooted_candidate_types.append('c')
+            r_base.append(caterpillars[0])
+        elif idx > 60 and idx < 75:
+            rooted_candidates.append(pseudo_caterpillars[idx-60])
+            rooted_candidate_types.append('p')
+            r_base.append(pseudo_caterpillars[0])
+        elif idx > 75 and idx < 105:
+            rooted_candidates.append(balanced[idx-75])
+            rooted_candidate_types.append('b')
+            r_base.append(balanced[0])
+
+    for i in range(len(rooted_candidates)):
+        print(rooted_candidates[i], score(rooted_candidates[i], r_base[i], u_distribution, tns, quintets, rooted_candidate_types[i]))
+        print("d:", dendropy.calculate.treecompare.symmetric_difference(rooted_candidates[i], true_species_tree))
+
+
+    print("real species tree:", true_species_tree)
+    #print("min score", np.min(score_v))
+    #print(score_v)
+    # print(sorted(score_v))
+
+    print("infered rooted tree:")
+    inffered_rooted_tree = []
+    for i in range(len(rooted_candidates)):
+        if check_inequalities(rooted_candidates[i], r_base[i], u_distribution, tns, quintets, rooted_candidate_types[i]):
+            inffered_rooted_tree.append(rooted_candidates[i])
+            print(rooted_candidates[i])
+            print(dendropy.calculate.treecompare.symmetric_difference(rooted_candidates[i], true_species_tree))
+            print(score(rooted_candidates[i], r_base[i], u_distribution, tns, quintets, rooted_candidate_types[i]))
+
+    print(len(inffered_rooted_tree))
+
     return
 
 
@@ -87,6 +119,19 @@ def quintets_map(quintets, tns, map):
 
     return mapped_indices
 
+def check_inequalities(r, r_base, u_distribution, tns, quintets, type):
+    map = taxon_set_map(r_base, r, tns)
+    indices = quintets_map(quintets, tns, map)
+    eq_holds = True
+    if type == 'c':
+        eq_holds = (u_distribution[indices[0]] > u_distribution[indices[1]]) & (u_distribution[indices[2]] > u_distribution[indices[1]])
+    elif type == 'b':
+        eq_holds = (u_distribution[indices[0]] > u_distribution[indices[1]])
+    elif type == 'p':
+        eq_holds = (u_distribution[indices[0]] > u_distribution[indices[1]])
+    return eq_holds
+
+
 def taxon_set_map(t1, t2, tns):
     map = ['0']*5
     for i in range(len(tns)):
@@ -97,7 +142,7 @@ def taxon_set_map(t1, t2, tns):
 def root(u_distribution):
     return
 
-# todo returns the set of invariants of this rooted tree using table 5 of allman's paper
+# returns the set of invariants of this rooted tree using table 5 of allman's paper
 # this doesn't have to be a function, but can be a lookup table as well
 def invariants(u, indices, type):
     invariants = np.zeros(MAX_NUM_INVARIANT)
@@ -136,6 +181,22 @@ def invariants(u, indices, type):
     else:
         return None
     return invariants
+
+
+'''def invariants(u, indices, type):
+    invariants = np.zeros(0)
+    equivalence_classes = []
+    if type == 'c':
+        equivalence_classes = [[0], [1], [2], [3, 12], [4, 11], [5, 8], [6, 7, 9, 10, 13, 14]]
+    elif type == 'b':
+        equivalence_classes = [[0], [1, 2], [3, 12], [4, 5, 8, 11], [6, 7, 9, 10, 13, 14]]
+    elif type == 'p':
+        equivalence_classes = [[0], [1, 2], [3, 12], [7, 10], [4, 5, 6, 8, 9, 11, 13, 14]]
+    for c in equivalence_classes:
+        for i in range(len(c)):
+            for j in range(i+1, len(c)):
+                invariants = np.append(invariants, u[indices[c[i]]] - u[indices[c[j]]])
+    return invariants'''
 
 
 def score(r, r_base, u_distribution, tns, quintets, type):
