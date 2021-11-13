@@ -22,8 +22,9 @@ def main(args):
     tns = dendropy.TaxonNamespace()
     quintets = dendropy.TreeList.get(path='topologies/quintets.tre', schema='newick', taxon_namespace=tns)
 
-    true_species_tree = dendropy.Tree.get(path='species_tree_mapped.tre', schema='newick', taxon_namespace=tns)
-    gene_trees = dendropy.TreeList.get(path='avian_genes_mapped.tre', schema='newick', taxon_namespace=tns)
+    true_species_tree = dendropy.Tree.get(path='data/species_tree_mapped.tre', schema='newick', taxon_namespace=tns)
+
+    gene_trees = dendropy.TreeList.get(path='data/avian_genes_mapped.tre', schema='newick', taxon_namespace=tns)
     u_count = np.zeros(len(quintets))
 
     for g in gene_trees:
@@ -34,7 +35,7 @@ def main(args):
                 break
 
     u_distribution = u_count / len(gene_trees)
-    print("estimated gene tree distribution")
+    #print("estimated gene tree distribution")
     # print(u_distribution)
     #print(np.sum(u_distribution))
 
@@ -80,7 +81,6 @@ def main(args):
         print(rooted_candidates[i], score(rooted_candidates[i], r_base[i], u_distribution, tns, quintets, rooted_candidate_types[i]))
         print("d:", dendropy.calculate.treecompare.symmetric_difference(rooted_candidates[i], true_species_tree))
 
-
     print("real species tree:", true_species_tree)
     #print("min score", np.min(score_v))
     #print(score_v)
@@ -91,12 +91,10 @@ def main(args):
     for i in range(len(rooted_candidates)):
         if check_inequalities(rooted_candidates[i], r_base[i], u_distribution, tns, quintets, rooted_candidate_types[i]):
             inffered_rooted_tree.append(rooted_candidates[i])
-            print(rooted_candidates[i])
-            print(dendropy.calculate.treecompare.symmetric_difference(rooted_candidates[i], true_species_tree))
-            print(score(rooted_candidates[i], r_base[i], u_distribution, tns, quintets, rooted_candidate_types[i]))
+            print(rooted_candidates[i], score(rooted_candidates[i], r_base[i], u_distribution, tns, quintets, rooted_candidate_types[i]))
+            print("d:", dendropy.calculate.treecompare.symmetric_difference(rooted_candidates[i], true_species_tree))
 
     print(len(inffered_rooted_tree))
-
     return
 
 
@@ -141,6 +139,46 @@ def taxon_set_map(t1, t2, tns):
 
 def root(u_distribution):
     return
+
+# can put this in a function
+'''def invariants(u, indices, type):
+    invariants = np.zeros(MAX_NUM_INVARIANT)
+    if type == 'c':
+        invariants[0] = max(u[indices[13]], u[indices[14]]) / min(u[indices[13]], u[indices[14]])
+        invariants[1] = max(u[indices[10]], u[indices[14]]) / min(u[indices[10]], u[indices[14]])
+        invariants[2] = max(u[indices[9]], u[indices[14]]) / min(u[indices[9]], u[indices[14]])
+        invariants[3] = max(u[indices[7]], u[indices[14]]) / min(u[indices[7]], u[indices[14]])
+        invariants[4] = max(u[indices[6]], u[indices[14]]) / min(u[indices[6]], u[indices[14]])
+        invariants[5] = max(u[indices[5]], u[indices[8]]) / min(u[indices[5]], u[indices[8]])
+        invariants[6] = max(u[indices[4]], u[indices[11]]) / min(u[indices[4]], u[indices[11]])
+        invariants[7] = max(u[indices[3]], u[indices[12]]) / min(u[indices[3]], u[indices[12]])
+        invariants[8] = max(u[indices[1]]+u[indices[8]], u[indices[14]]+u[indices[11]]) / min(u[indices[1]]+u[indices[8]], u[indices[14]]+u[indices[11]])
+        invariants[9] =  1
+    elif type == 'b':
+        invariants[0] = max(u[indices[13]], u[indices[14]]) / min(u[indices[13]], u[indices[14]])
+        invariants[1] = max(u[indices[10]], u[indices[14]]) / min(u[indices[10]], u[indices[14]])
+        invariants[2] = max(u[indices[9]], u[indices[14]]) / min(u[indices[9]], u[indices[14]])
+        invariants[3] = max(u[indices[8]], u[indices[11]]) / min(u[indices[8]], u[indices[11]])
+        invariants[4] = max(u[indices[7]], u[indices[14]]) / min(u[indices[7]], u[indices[14]])
+        invariants[5] = max(u[indices[6]], u[indices[14]]) / min(u[indices[6]], u[indices[14]])
+        invariants[6] = max(u[indices[5]], u[indices[11]]) / min(u[indices[5]], u[indices[11]])
+        invariants[7] = max(u[indices[4]], u[indices[11]]) / min(u[indices[4]], u[indices[11]])
+        invariants[8] = max(u[indices[3]], u[indices[12]]) / min(u[indices[3]], u[indices[12]])
+        invariants[9] = max(u[indices[1]], u[indices[2]]) / min(u[indices[1]], u[indices[2]])
+    elif type == 'p':
+        invariants[0] = max(u[indices[13]], u[indices[14]]) / min(u[indices[13]], u[indices[14]])
+        invariants[1] = max(u[indices[11]], u[indices[14]]) / min(u[indices[11]], u[indices[14]])
+        invariants[2] = max(u[indices[9]], u[indices[14]]) / min(u[indices[9]], u[indices[14]])
+        invariants[3] = max(u[indices[8]], u[indices[14]]) / min(u[indices[8]], u[indices[14]])
+        invariants[4] = max(u[indices[7]], u[indices[10]]) / min(u[indices[7]], u[indices[10]])
+        invariants[5] = max(u[indices[6]], u[indices[14]]) / min(u[indices[6]], u[indices[14]])
+        invariants[6] = max(u[indices[5]], u[indices[14]]) / min(u[indices[5]], u[indices[14]])
+        invariants[7] = max(u[indices[4]], u[indices[14]]) / min(u[indices[4]], u[indices[14]])
+        invariants[8] = max(u[indices[3]], u[indices[12]]) / min(u[indices[3]], u[indices[12]])
+        invariants[9] = max(u[indices[1]], u[indices[2]]) / min(u[indices[1]], u[indices[2]])
+    else:
+        return None
+    return invariants'''
 
 # returns the set of invariants of this rooted tree using table 5 of allman's paper
 # this doesn't have to be a function, but can be a lookup table as well
