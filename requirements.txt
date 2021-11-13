@@ -1,4 +1,4 @@
-DendroPy==4.5.2
-mpmath==1.2.1
-numpy==1.21.3
-sympy==1.9
+DendroPy
+mpmath
+numpy
+sympy
