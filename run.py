@@ -31,6 +31,9 @@ correct_topology_count = 0
 correct_tree_count = 0
 avg_rf_dist = 0
 
+with open('test_indices.txt', 'w') as fp:
+    fp.write(indices_list)
+
 generate_data(indices_list)
 
 for indices in indices_list:
@@ -54,11 +57,11 @@ for indices in indices_list:
     #os.system("python3 data_reading.py -i 1 2 3 4 5")
     print(time.time() - start_time)
 
-print("percentage of the times where the true species tree is among the top k candidates:")
+print("percentage of the tests where the true species tree is among the top 3 (of 105) rooted candidates:")
 print(topk_count/len(indices_list)*100)
-print("percentage of the times where the infered tree had the correct topology:")
+print("percentage of the tests where the infered tree had the correct topology:")
 print(correct_topology_count/len(indices_list)*100)
-print("percentage of the times where the inferred tree was the true rooted species tree :")
+print("percentage of the tests where the inferred tree was the true rooted species tree :")
 print(correct_tree_count/len(indices_list)*100)
-print("avg rf distance (rooted)")
+print("avg rf distance (rooted, not normalized, i.e. fp+fn)")
 print(avg_rf_dist/len(indices_list))
