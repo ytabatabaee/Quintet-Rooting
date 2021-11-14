@@ -16,11 +16,11 @@ def main(args):
     tns = dendropy.TaxonNamespace()
     quintets = dendropy.TreeList.get(path='topologies/quintets.tre', schema='newick', taxon_namespace=tns)
 
-    true_species_tree = dendropy.Tree.get(path='data/species_tree_mapped.tre', schema='newick', taxon_namespace=tns)
+    true_species_tree = dendropy.Tree.get(path=input_path, schema='newick', taxon_namespace=tns)
     species_tree_toplogy = dendropy.Tree.get(data=true_species_tree.as_string(schema='newick'), schema='newick',
                                             rooting="force-unrooted", taxon_namespace=tns)
 
-    gene_trees = dendropy.TreeList.get(path='data/avian_genes_mapped.tre', schema='newick', taxon_namespace=tns)
+    gene_trees = dendropy.TreeList.get(path=output_path, schema='newick', taxon_namespace=tns)
     u_count = np.zeros(len(quintets))
 
     for g in gene_trees:
@@ -86,11 +86,8 @@ def main(args):
     unrooted_tree = dendropy.Tree.get(data=rooted_tree.as_string(schema='newick'), schema='newick',
                                     rooting="force-unrooted", taxon_namespace=tns)
 
-    print("best rooted tree", rooted_tree.as_string(schema='newick'))
-    print("real species tree:", true_species_tree.as_string(schema='newick'))
-
-    print("unrooted topology", unrooted_tree.as_string(schema='newick'))
-    print("real species tree topology:", species_tree_toplogy.as_string(schema='newick'))
+    print("best rooted tree", rooted_tree)
+    print("true species tree:", true_species_tree)
 
     correct_topology_flag = False
     correct_tree_flag = False
@@ -268,7 +265,7 @@ def invariants(u, indices, type):
 def score(r, r_base, u_distribution, tns, quintets, type):
     map = taxon_set_map(r_base, r, tns)
     mapped_indices = quintets_map(quintets, tns, map)
-    #return np.sum(np.absolute(invariants(u_distribution, mapped_indices, type))
+    #return np.sum(np.absolute(invariants(u_distribution, mapped_indices, type)))
     return np.sum(np.power(invariants(u_distribution, mapped_indices, type), 2))
 
 
