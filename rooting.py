@@ -49,10 +49,15 @@ def main(args):
     for i in range(len(balanced)):
         score_v[i + len(caterpillars) + len(pseudo_caterpillars)] = score(balanced[i], balanced[0], u_distribution, tns, quintets, "b")
 
-    idx = np.argpartition(score_v, CANDIDATE_SIZE)
-    #print(idx)
-    min_indices = idx[:CANDIDATE_SIZE]
+    min_indices = sorted(range(len(score_v)), key = lambda sub: score_v[sub])[:CANDIDATE_SIZE]
+    #idx = np.argpartition(score_v, CANDIDATE_SIZE)
+    #print(res)
+    #print(idx[:CANDIDATE_SIZE])
+    #min_indices = idx[:CANDIDATE_SIZE]
     min_index = np.where(score_v == score_v.min())[0][0] # this is not fair
+    #print(min_index)
+    #print(score_v)
+    #print(score_v[min_index])
     #print(min_indices)
 
     rooted_candidates = []
@@ -108,13 +113,13 @@ def main(args):
     # print(sorted(score_v))
 
     # check the inequalities
-    '''print("infered rooted tree:")
+    print(" after checking inequalities:")
     inffered_rooted_tree = []
     for i in range(len(rooted_candidates)):
         if check_inequalities(rooted_candidates[i], r_base[i], u_distribution, tns, quintets, rooted_candidate_types[i]):
             inffered_rooted_tree.append(rooted_candidates[i])
             print(rooted_candidates[i], score(rooted_candidates[i], r_base[i], u_distribution, tns, quintets, rooted_candidate_types[i]),
-                  dendropy.calculate.treecompare.symmetric_difference(rooted_candidates[i], true_species_tree), rooted_candidate_types[i])'''
+                  dendropy.calculate.treecompare.symmetric_difference(rooted_candidates[i], true_species_tree), rooted_candidate_types[i])
 
 
     print(int(top_five_flag))
@@ -267,6 +272,7 @@ def score(r, r_base, u_distribution, tns, quintets, type):
     mapped_indices = quintets_map(quintets, tns, map)
     #return np.sum(np.absolute(invariants(u_distribution, mapped_indices, type)))
     return np.sum(np.power(invariants(u_distribution, mapped_indices, type), 2))
+    #return np.sum(np.log(invariants_ratio(u_distribution, mapped_indices, type)))
 
 
 def tree_shape(u_distribution):
