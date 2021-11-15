@@ -5,7 +5,7 @@ import dendropy
 import numpy as np
 
 MAX_NUM_INVARIANT = 10
-CANDIDATE_SIZE = 3
+CANDIDATE_SIZE = 5
 
 
 def main(args):
@@ -31,6 +31,7 @@ def main(args):
                 break
 
     u_distribution = u_count / len(gene_trees)
+    #print(u_distribution)
     #print("estimated gene tree distribution")
     # print(u_distribution)
     #print(np.sum(u_distribution))
@@ -56,6 +57,8 @@ def main(args):
     #min_indices = idx[:CANDIDATE_SIZE]
     min_index = np.where(score_v == score_v.min())[0][0] # this is not fair
     #print(min_index)
+    #print(min_indices)
+    #print(min_index)
     #print(score_v)
     #print(score_v[min_index])
     #print(min_indices)
@@ -70,11 +73,11 @@ def main(args):
             rooted_candidates.append(caterpillars[idx])
             rooted_candidate_types.append('c')
             r_base.append(caterpillars[0])
-        elif idx > 60 and idx < 75:
+        elif idx >= 60 and idx < 75:
             rooted_candidates.append(pseudo_caterpillars[idx-60])
             rooted_candidate_types.append('p')
             r_base.append(pseudo_caterpillars[0])
-        elif idx > 75 and idx < 105:
+        elif idx >= 75 and idx < 105:
             rooted_candidates.append(balanced[idx-75])
             rooted_candidate_types.append('b')
             r_base.append(balanced[0])
@@ -83,9 +86,9 @@ def main(args):
     rooted_tree = None
     if min_index < 60:
         rooted_tree = caterpillars[min_index]
-    elif min_index > 60 and min_index < 75:
+    elif min_index >= 60 and min_index < 75:
         rooted_tree = pseudo_caterpillars[min_index-60]
-    elif min_index > 75 and min_index < 105:
+    elif min_index >= 75 and min_index < 105:
         rooted_tree = balanced[min_index-75]
 
     unrooted_tree = dendropy.Tree.get(data=rooted_tree.as_string(schema='newick'), schema='newick',
@@ -168,8 +171,6 @@ def taxon_set_map(t1, t2, tns):
         map[i] = str(t2)[idx]
     return map
 
-def root(u_distribution):
-    return
 
 def invariants_ratio(u, indices, type):
     invariants = np.zeros(MAX_NUM_INVARIANT)
@@ -268,74 +269,15 @@ def invariants(u, indices, type):
 
 
 def score(r, r_base, u_distribution, tns, quintets, type):
+    #print("r", r)
+    #print("r-base", r_base)
     map = taxon_set_map(r_base, r, tns)
+    #print("map", map)
     mapped_indices = quintets_map(quintets, tns, map)
-    #return np.sum(np.absolute(invariants(u_distribution, mapped_indices, type)))
-    return np.sum(np.power(invariants(u_distribution, mapped_indices, type), 2))
+    #print("mapped indices", mapped_indices)
+    return np.sum(np.absolute(invariants(u_distribution, mapped_indices, type)))
+    #return np.sum(np.power(invariants(u_distribution, mapped_indices, type), 2))
     #return np.sum(np.log(invariants_ratio(u_distribution, mapped_indices, type)))
-
-
-def tree_shape(u_distribution):
-    # sort the u values
-    # clustering
-    # find the clusters in the u-distriution and the sizes of these clusters
-    # if smallest class size == 8, then the tree is pseudo_caterpillar
-    # if the class of the second smallest prob was 4 then balanced otherwise caterpillar
-    return
-
-def branch_lengths():
-    # todo: this function doesn't seem to be working for complicated equations
-    from sympy import solve, Poly, Eq, Function, exp, Symbol
-    from sympy.abc import x, y, z, a, b
-    #x, y, z = Symbol('x'), Symbol('y'), Symbol('z')
-    u = gen_caterpillar()
-    print(u*100)
-    print(np.sum(u))
-    print(solve([1 - 2/3*x - 2/3*y + 1/3*x*y + 1/18*x*y**3 + 1/90*x*y**3*z**6 - u[1],
-                1/3*y - 1/6*x*y - 1/9*x*y**3 + 1/90*x*y**3*z**6 - u[2],
-                1/3*y - 1/6*x*y - 1/18*x*y**3 - 2/45*x*y**3*z**6 - u[3],
-                1/3*x - 1/3*x*y + 1/18*x*y**3 + 1/90*x*y**3*z**6 - u[4],
-                1/6*x*y - 1/9*x*y**3 + 1/90*x*y**3*z**6 - u[5],
-                1/6*x*y - 1/18*x*y**3 - 2/45*x*y**3*z**6 - u[6],
-                1/18*x*y**3 + 1/90*x*y**3*z**6 - u[7]]))
-    #print(solve([x**2 - 1,
-    #            y-x + 3]))
-    #solve([x**2 - 3, y - 1], set=True)
-    #print(x, y)
-    return
-
-# can use these functions to know how far ui values are from
-# where they should be
-
-def gen_caterpillar(x=0.1, y=0.2, z=0.3):
-    u = np.zeros(16)
-    u[1] = 1 - 2/3*x - 2/3*y + 1/3*x*y + 1/18*x*y**3 + 1/90*x*y**3*z**6
-    u[2] = 1/3*y - 1/6*x*y - 1/9*x*y**3 + 1/90*x*y**3*z**6
-    u[3] = 1/3*y - 1/6*x*y - 1/18*x*y**3 - 2/45*x*y**3*z**6
-    u[4] = u[13] = 1/3*x - 1/3*x*y + 1/18*x*y**3 + 1/90*x*y**3*z**6
-    u[5] = u[12] = 1/6*x*y - 1/9*x*y**3 + 1/90*x*y**3*z**6
-    u[6] = u[9] = 1/6*x*y - 1/18*x*y**3 - 2/45*x*y**3*z**6
-    u[7] = u[8] = u[10] = u[11] = u[14] = u[15] = 1/18*x*y**3 + 1/90*x*y**3*z**6
-    return u
-
-def gen_balanced(x=0.1, y=0.2, z=0.3):
-    u = np.zeros(16)
-    u[1] = 1 - 2/3*x - 2/3*y*z + 1/3*x*y*z + 1/15*x*y**3*z
-    u[2] = u[3] = 1/3*y*z - 1/6*x*y*z - 1/10*x*y**3*z
-    u[4] = u[13] = 1/3*x - 1/3*x*y*z + 1/15*x*y**3*z
-    u[5] = u[6] = u[9] = u[12] = 1/6*x*y*z - 1/10*x*y**3*z
-    u[7] = u[8] = u[10] = u[11] = u[14] = u[15] = 1/15*x*y**3*z
-    return u
-
-def gen_pseudo_caterpillar(x=0.1, y=0.2, z=0.3):
-    u = np.zeros(16)
-    u[1] = 1 - 2/3*x - 2/3*y + 4/9*x*y - 2/45*x*y*z**6
-    u[2] = u[3] = 1/3*y - 5/18*x*y + 1/90*x*y*z**6
-    u[4] = u[13] = 1/3*x - 5/18*x*y + 1/90*x*y*z**6
-    u[5] = u[6] = u[7] = u[9] = u[10] = u[12] = u[14] = u[15] = 1/18*x*y + 1/90*x*y*z**6
-    u[8] = u[11] = 1/9*x*y - 2/45*x*y*z**6
-    return u
-
 
 def parse_args():
     parser = argparse.ArgumentParser()

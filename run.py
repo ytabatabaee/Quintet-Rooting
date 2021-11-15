@@ -31,13 +31,13 @@ correct_topology_count = 0
 correct_tree_count = 0
 avg_rf_dist = 0
 
-#with open('test_indices.txt', 'w') as fp:
-#    fp.write(indices_list)
+#indices_list = generate_indices(taxa_count, n)
+#with open('test_indices.txt', 'a') as fp:
+#    fp.write(str(indices_list))
+#generate_data(indices_list)
 
-indices_list = generate_indices(taxa_count, n)
-generate_data(indices_list)
-
-'''gene_tree_list = glob.glob('data/avian_genes_mapped*.tre')
+gene_tree_list = glob.glob('data/avian_genes_mapped*.tre')
+print(len(gene_tree_list))
 
 for gene_tree_path in gene_tree_list:
     start_time = time.time()
@@ -69,4 +69,4 @@ print(correct_topology_count/data_size*100)
 print("Percentage of tests where the inferred tree was the true rooted species tree :")
 print(correct_tree_count/data_size*100)
 print("Average RF distance (rooted, not normalized, i.e. fp+fn)")
-print(avg_rf_dist/data_size)'''
+print(avg_rf_dist/data_size)
