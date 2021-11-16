@@ -171,82 +171,48 @@ def taxon_set_map(t1, t2, tns):
         map[i] = str(t2)[idx]
     return map
 
+def invariant_metric(a, b):
+    return np.abs(a - b)# / (a + b)
+    #return np.power(a-b, 2)
+    #return np.log(max(a, b) / min(a, b))
 
-def invariants_ratio(u, indices, type):
-    invariants = np.zeros(MAX_NUM_INVARIANT)
-    if type == 'c':
-        invariants[0] = max(u[indices[13]], u[indices[14]]) / min(u[indices[13]], u[indices[14]])
-        invariants[1] = max(u[indices[10]], u[indices[14]]) / min(u[indices[10]], u[indices[14]])
-        invariants[2] = max(u[indices[9]], u[indices[14]]) / min(u[indices[9]], u[indices[14]])
-        invariants[3] = max(u[indices[7]], u[indices[14]]) / min(u[indices[7]], u[indices[14]])
-        invariants[4] = max(u[indices[6]], u[indices[14]]) / min(u[indices[6]], u[indices[14]])
-        invariants[5] = max(u[indices[5]], u[indices[8]]) / min(u[indices[5]], u[indices[8]])
-        invariants[6] = max(u[indices[4]], u[indices[11]]) / min(u[indices[4]], u[indices[11]])
-        invariants[7] = max(u[indices[3]], u[indices[12]]) / min(u[indices[3]], u[indices[12]])
-        invariants[8] = max(u[indices[1]]+u[indices[8]], u[indices[14]]+u[indices[11]]) / min(u[indices[1]]+u[indices[8]], u[indices[14]]+u[indices[11]])
-        invariants[9] =  1
-    elif type == 'b':
-        invariants[0] = max(u[indices[13]], u[indices[14]]) / min(u[indices[13]], u[indices[14]])
-        invariants[1] = max(u[indices[10]], u[indices[14]]) / min(u[indices[10]], u[indices[14]])
-        invariants[2] = max(u[indices[9]], u[indices[14]]) / min(u[indices[9]], u[indices[14]])
-        invariants[3] = max(u[indices[8]], u[indices[11]]) / min(u[indices[8]], u[indices[11]])
-        invariants[4] = max(u[indices[7]], u[indices[14]]) / min(u[indices[7]], u[indices[14]])
-        invariants[5] = max(u[indices[6]], u[indices[14]]) / min(u[indices[6]], u[indices[14]])
-        invariants[6] = max(u[indices[5]], u[indices[11]]) / min(u[indices[5]], u[indices[11]])
-        invariants[7] = max(u[indices[4]], u[indices[11]]) / min(u[indices[4]], u[indices[11]])
-        invariants[8] = max(u[indices[3]], u[indices[12]]) / min(u[indices[3]], u[indices[12]])
-        invariants[9] = max(u[indices[1]], u[indices[2]]) / min(u[indices[1]], u[indices[2]])
-    elif type == 'p':
-        invariants[0] = max(u[indices[13]], u[indices[14]]) / min(u[indices[13]], u[indices[14]])
-        invariants[1] = max(u[indices[11]], u[indices[14]]) / min(u[indices[11]], u[indices[14]])
-        invariants[2] = max(u[indices[9]], u[indices[14]]) / min(u[indices[9]], u[indices[14]])
-        invariants[3] = max(u[indices[8]], u[indices[14]]) / min(u[indices[8]], u[indices[14]])
-        invariants[4] = max(u[indices[7]], u[indices[10]]) / min(u[indices[7]], u[indices[10]])
-        invariants[5] = max(u[indices[6]], u[indices[14]]) / min(u[indices[6]], u[indices[14]])
-        invariants[6] = max(u[indices[5]], u[indices[14]]) / min(u[indices[5]], u[indices[14]])
-        invariants[7] = max(u[indices[4]], u[indices[14]]) / min(u[indices[4]], u[indices[14]])
-        invariants[8] = max(u[indices[3]], u[indices[12]]) / min(u[indices[3]], u[indices[12]])
-        invariants[9] = max(u[indices[1]], u[indices[2]]) / min(u[indices[1]], u[indices[2]])
-    else:
-        return None
-    return invariants
 
 # returns the set of invariants of this rooted tree using table 5 of allman's paper
 # this doesn't have to be a function, but can be a lookup table as well
 def invariants(u, indices, type):
     invariants = np.zeros(MAX_NUM_INVARIANT)
     if type == 'c':
-        invariants[0] = u[indices[13]] - u[indices[14]]
-        invariants[1] = u[indices[10]] - u[indices[14]]
-        invariants[2] = u[indices[9]] - u[indices[14]]
-        invariants[3] = u[indices[7]] - u[indices[14]]
-        invariants[4] = u[indices[6]] - u[indices[14]]
-        invariants[5] = u[indices[5]] - u[indices[8]]
-        invariants[6] = u[indices[4]] - u[indices[11]]
-        invariants[7] = u[indices[3]] - u[indices[12]]
-        invariants[8] = u[indices[1]] - u[indices[2]] + u[indices[8]] - u[indices[11]]
+        invariants[0] = invariant_metric(u[indices[13]], u[indices[14]])
+        invariants[1] = invariant_metric(u[indices[10]], u[indices[14]])
+        invariants[2] = invariant_metric(u[indices[9]], u[indices[14]])
+        invariants[3] = invariant_metric(u[indices[7]], u[indices[14]])
+        invariants[4] = invariant_metric(u[indices[6]], u[indices[14]])
+        invariants[5] = invariant_metric(u[indices[5]], u[indices[8]])
+        invariants[6] = invariant_metric(u[indices[4]], u[indices[11]])
+        invariants[7] = invariant_metric(u[indices[3]], u[indices[12]])
+        invariants[8] = invariant_metric(u[indices[1]] + u[indices[8]], u[indices[2]] + u[indices[11]])
     elif type == 'b':
-        invariants[0] = u[indices[13]] - u[indices[14]]
-        invariants[1] = u[indices[10]] - u[indices[14]]
-        invariants[2] = u[indices[9]] - u[indices[14]]
-        invariants[3] = u[indices[8]] - u[indices[11]]
-        invariants[4] = u[indices[7]] - u[indices[14]]
-        invariants[5] = u[indices[6]] - u[indices[14]]
-        invariants[6] = u[indices[5]] - u[indices[11]]
-        invariants[7] = u[indices[4]] - u[indices[11]]
-        invariants[8] = u[indices[3]] - u[indices[12]]
-        invariants[9] = u[indices[1]] - u[indices[2]]
+        invariants[0] = invariant_metric(u[indices[13]], u[indices[14]])
+        invariants[1] = invariant_metric(u[indices[10]], u[indices[14]])
+        invariants[2] = invariant_metric(u[indices[9]], u[indices[14]])
+        invariants[3] = invariant_metric(u[indices[8]], u[indices[11]])
+        invariants[4] = invariant_metric(u[indices[7]], u[indices[14]])
+        invariants[5] = invariant_metric(u[indices[6]], u[indices[14]])
+        invariants[6] = invariant_metric(u[indices[5]], u[indices[11]])
+        invariants[7] = invariant_metric(u[indices[4]], u[indices[11]])
+        invariants[8] = invariant_metric(u[indices[3]], u[indices[12]])
+        invariants[9] = invariant_metric(u[indices[1]], u[indices[2]])
     elif type == 'p':
-        invariants[0] = u[indices[13]] - u[indices[14]]
-        invariants[1] = u[indices[11]] - u[indices[14]]
-        invariants[2] = u[indices[9]] - u[indices[14]]
-        invariants[3] = u[indices[8]] - u[indices[14]]
-        invariants[4] = u[indices[7]] - u[indices[10]]
-        invariants[5] = u[indices[6]] - u[indices[14]]
-        invariants[6] = u[indices[5]] - u[indices[14]]
-        invariants[7] = u[indices[4]] - u[indices[14]]
-        invariants[8] = u[indices[3]] - u[indices[12]]
-        invariants[9] = u[indices[1]] - u[indices[2]]
+        invariants[0] = invariant_metric(u[indices[13]], u[indices[14]])
+        invariants[1] = invariant_metric(u[indices[11]], u[indices[14]])
+        invariants[2] = invariant_metric(u[indices[9]], u[indices[14]])
+        invariants[3] = invariant_metric(u[indices[8]], u[indices[14]])
+        invariants[4] = invariant_metric(u[indices[7]], u[indices[10]])
+        invariants[5] = invariant_metric(u[indices[6]], u[indices[14]])
+        invariants[6] = invariant_metric(u[indices[5]], u[indices[14]])
+        invariants[7] = invariant_metric(u[indices[4]], u[indices[14]])
+        invariants[8] = invariant_metric(u[indices[3]], u[indices[12]])
+        invariants[9] = invariant_metric(u[indices[1]], u[indices[2]])
     else:
         return None
     return invariants
@@ -269,15 +235,10 @@ def invariants(u, indices, type):
 
 
 def score(r, r_base, u_distribution, tns, quintets, type):
-    #print("r", r)
-    #print("r-base", r_base)
     map = taxon_set_map(r_base, r, tns)
-    #print("map", map)
     mapped_indices = quintets_map(quintets, tns, map)
-    #print("mapped indices", mapped_indices)
-    return np.sum(np.absolute(invariants(u_distribution, mapped_indices, type)))
-    #return np.sum(np.power(invariants(u_distribution, mapped_indices, type), 2))
-    #return np.sum(np.log(invariants_ratio(u_distribution, mapped_indices, type)))
+    return np.sum(invariants(u_distribution, mapped_indices, type))
+
 
 def parse_args():
     parser = argparse.ArgumentParser()

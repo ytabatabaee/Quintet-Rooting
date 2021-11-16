@@ -31,15 +31,15 @@ correct_topology_count = 0
 correct_tree_count = 0
 avg_rf_dist = 0
 
-#indices_list = generate_indices(taxa_count, n)
-#with open('test_indices.txt', 'a') as fp:
-#    fp.write(str(indices_list))
-#generate_data(indices_list)
+'''indices_list = generate_indices(taxa_count, n)
+with open('test_indices_with_lengths.txt', 'a') as fp:
+    fp.write(str(indices_list))
+generate_data(indices_list)'''
 
 gene_tree_list = glob.glob('data/avian_genes_mapped*.tre')
 print(len(gene_tree_list))
 
-for gene_tree_path in gene_tree_list:
+for gene_tree_path in gene_tree_list[:10]:
     start_time = time.time()
     indices_string = ''.join(c for c in gene_tree_path if c.isdigit())
     species_tree_path = 'data/species_tree_mapped' + indices_string + '.tre'
@@ -57,10 +57,9 @@ for gene_tree_path in gene_tree_list:
     correct_topology_count += int(lis[length-3])
     avg_rf_dist += int(lis[length-2])
 
-    #os.system("python3 data_reading.py -i 1 2 3 4 5")
     print(time.time() - start_time)
 
-data_size = len(gene_tree_list)
+data_size = len(gene_tree_list[:10])
 
 print("Percentage of tests where the true species tree is among the top 3 (of 105) rooted candidates:")
 print(topk_count/data_size*100)

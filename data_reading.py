@@ -24,6 +24,8 @@ def extract_quintet_tree(indices):
     species_subtree = species_tree.extract_tree_with_taxa_labels(labels=subtree_taxa, suppress_unifurcations=True)
     s = map_taxonnamespace(species_subtree.as_string(schema='newick'), subtree_taxa)
     species_subtree_mapped = dendropy.Tree.get(data=s, schema='newick')
+    unrooted_species_tree = dendropy.Tree.get(data=s, schema='newick', rooting='force-unrooted')
+    unrooted_species_tree.write_to_path(dest='data/species_tree_mapped_with_lengths' + str_indices + '.tre', schema='newick')
     species_subtree_mapped.write_to_path(dest='data/species_tree_mapped' + str_indices + '.tre', schema='newick', suppress_edge_lengths=True,
                                     suppress_internal_node_labels=True)
 
