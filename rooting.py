@@ -4,7 +4,7 @@ import argparse
 import dendropy
 import numpy as np
 
-MAX_NUM_INVARIANT = 10
+MAX_NUM_INVARIANT = 20
 CANDIDATE_SIZE = 5
 
 
@@ -23,6 +23,8 @@ def main(args):
     gene_trees = dendropy.TreeList.get(path=output_path, schema='newick', taxon_namespace=tns)
     u_count = np.zeros(len(quintets))
 
+    #print(len(quintets))
+
     for g in gene_trees:
         for i in range(len(quintets)):
             d = dendropy.calculate.treecompare.symmetric_difference(quintets[i], g)
@@ -31,23 +33,38 @@ def main(args):
                 break
 
     u_distribution = u_count / len(gene_trees)
-    #print(u_distribution)
-    #print("estimated gene tree distribution")
-    # print(u_distribution)
+    print("estimated gene tree distribution")
+    print(u_distribution)
     #print(np.sum(u_distribution))
 
     score_v = np.zeros(105)
 
     caterpillars = dendropy.TreeList.get(path='topologies/caterpillar.tre', schema='newick', taxon_namespace=tns)
     for i in range(len(caterpillars)):
+        unrooted_cater = dendropy.Tree.get(data=caterpillars[i].as_string(schema='newick'), schema='newick',
+                                        rooting="force-unrooted", taxon_namespace=tns)
+        if dendropy.calculate.treecompare.symmetric_difference(unrooted_cater, species_tree_toplogy) != 0:
+            continue
+        print(i)
+        #print(caterpillars[i])
         score_v[i] = score(caterpillars[i], caterpillars[0], u_distribution, tns, quintets, "c")
 
     pseudo_caterpillars = dendropy.TreeList.get(path='topologies/pseudo_caterpillar.tre', schema='newick', taxon_namespace=tns)
     for i in range(len(pseudo_caterpillars)):
+        unrooted_pseudo = dendropy.Tree.get(data=pseudo_caterpillars[i].as_string(schema='newick'), schema='newick',
+                                        rooting="force-unrooted", taxon_namespace=tns)
+        if dendropy.calculate.treecompare.symmetric_difference(unrooted_pseudo, species_tree_toplogy) != 0:
+            continue
+        print(i+len(caterpillars))
         score_v[len(caterpillars) + i] = score(pseudo_caterpillars[i], pseudo_caterpillars[0], u_distribution, tns, quintets, "p")
 
     balanced = dendropy.TreeList.get(path='topologies/balanced.tre', schema='newick', taxon_namespace=tns)
     for i in range(len(balanced)):
+        unrooted_balanced = dendropy.Tree.get(data=balanced[i].as_string(schema='newick'), schema='newick',
+                                        rooting="force-unrooted", taxon_namespace=tns)
+        if dendropy.calculate.treecompare.symmetric_difference(unrooted_balanced, species_tree_toplogy) != 0:
+            continue
+        print(i + len(caterpillars) + len(pseudo_caterpillars))
         score_v[i + len(caterpillars) + len(pseudo_caterpillars)] = score(balanced[i], balanced[0], u_distribution, tns, quintets, "b")
 
     min_indices = sorted(range(len(score_v)), key = lambda sub: score_v[sub])[:CANDIDATE_SIZE]
@@ -55,7 +72,7 @@ def main(args):
     #print(res)
     #print(idx[:CANDIDATE_SIZE])
     #min_indices = idx[:CANDIDATE_SIZE]
-    min_index = np.where(score_v == score_v.min())[0][0] # this is not fair
+    min_index = min_indices[0]#np.where(score_v == score_v.min())[0][0] # this is not fair
     #print(min_index)
     #print(min_indices)
     #print(min_index)
@@ -115,16 +132,21 @@ def main(args):
     #print(score_v)
     # print(sorted(score_v))
 
+    map = taxon_set_map(r_base[0], rooted_candidates[0], tns)
+    print(map)
+    mapped_indices = quintets_map(quintets, tns, map)
+    print(mapped_indices)
+
     # check the inequalities
-    print(" after checking inequalities:")
+    '''print(" after checking inequalities:")
     inffered_rooted_tree = []
     for i in range(len(rooted_candidates)):
         if check_inequalities(rooted_candidates[i], r_base[i], u_distribution, tns, quintets, rooted_candidate_types[i]):
             inffered_rooted_tree.append(rooted_candidates[i])
             print(rooted_candidates[i], score(rooted_candidates[i], r_base[i], u_distribution, tns, quintets, rooted_candidate_types[i]),
                   dendropy.calculate.treecompare.symmetric_difference(rooted_candidates[i], true_species_tree), rooted_candidate_types[i])
-
-
+'''
+    print(rooted_candidate_types[0])
     print(int(top_five_flag))
     print(int(correct_tree_flag))
     print(int(correct_topology_flag))
@@ -133,15 +155,22 @@ def main(args):
 
 
 def quintets_map(quintets, tns, map):
-    q_mapped = quintets.clone()
+    q_mapped = quintets.clone() # this mean q_mapped is different from quintets!
     mapped_indices = np.zeros(len(quintets), dtype=int)
-
+    #print("map", map)
+    #print("tns", tns)
     for i in range(len(quintets)):
         q_mapped_str = str(quintets[i])
+        #print(q_mapped_str)
+        #print(map)
         for j in range(len(map)):
-            idx = str(q_mapped[i]).index(str(tns[j]).replace('\'', ''))
+            idx = str(quintets[i]).index(str(tns[j]).replace('\'', ''))
+            #print(idx)
             q_mapped_str = q_mapped_str[:idx] + str(map[j]).replace('\'', '') + q_mapped_str[idx+1:]
+            #print(q_mapped_str)
 
+        #print(q_mapped_str)
+        #print("======")
         q_mapped[i] = dendropy.Tree.get(data=q_mapped_str+';', schema="newick")
         for k in range(len(quintets)):
             d = dendropy.calculate.treecompare.symmetric_difference(quintets[k], q_mapped[i])
@@ -150,19 +179,6 @@ def quintets_map(quintets, tns, map):
                 break
 
     return mapped_indices
-
-def check_inequalities(r, r_base, u_distribution, tns, quintets, type):
-    map = taxon_set_map(r_base, r, tns)
-    indices = quintets_map(quintets, tns, map)
-    eq_holds = True
-    if type == 'c':
-        eq_holds = (u_distribution[indices[0]] > u_distribution[indices[1]]) & (u_distribution[indices[2]] > u_distribution[indices[1]])
-    elif type == 'b':
-        eq_holds = (u_distribution[indices[0]] > u_distribution[indices[1]]) & (u_distribution[indices[0]] > u_distribution[indices[3]])
-    elif type == 'p':
-        eq_holds = (u_distribution[indices[0]] > u_distribution[indices[1]]) & (u_distribution[indices[0]] > u_distribution[indices[3]])
-    return eq_holds
-
 
 def taxon_set_map(t1, t2, tns):
     map = ['0']*5
@@ -175,6 +191,10 @@ def invariant_metric(a, b):
     return np.abs(a - b)# / (a + b)
     #return np.power(a-b, 2)
     #return np.log(max(a, b) / min(a, b))
+
+def inequality_metric(a, b): # a < b
+    return (a - b)
+
 
 
 # returns the set of invariants of this rooted tree using table 5 of allman's paper
@@ -191,6 +211,14 @@ def invariants(u, indices, type):
         invariants[6] = invariant_metric(u[indices[4]], u[indices[11]])
         invariants[7] = invariant_metric(u[indices[3]], u[indices[12]])
         invariants[8] = invariant_metric(u[indices[1]] + u[indices[8]], u[indices[2]] + u[indices[11]])
+        invariants[9] = inequality_metric(u[indices[1]], u[indices[0]])
+        invariants[10] = inequality_metric(u[indices[3]], u[indices[0]])
+        invariants[11] = inequality_metric(u[indices[4]], u[indices[3]])
+        invariants[12] = inequality_metric(u[indices[4]], u[indices[1]])
+        invariants[13] = inequality_metric(u[indices[6]], u[indices[4]])
+        invariants[14] = inequality_metric(u[indices[1]], u[indices[2]])
+        invariants[15] = inequality_metric(u[indices[5]], u[indices[2]])
+        invariants[16] = inequality_metric(u[indices[4]], u[indices[5]])
     elif type == 'b':
         invariants[0] = invariant_metric(u[indices[13]], u[indices[14]])
         invariants[1] = invariant_metric(u[indices[10]], u[indices[14]])
@@ -202,6 +230,12 @@ def invariants(u, indices, type):
         invariants[7] = invariant_metric(u[indices[4]], u[indices[11]])
         invariants[8] = invariant_metric(u[indices[3]], u[indices[12]])
         invariants[9] = invariant_metric(u[indices[1]], u[indices[2]])
+        invariants[10] = inequality_metric(u[indices[1]], u[indices[0]])
+        invariants[11] = inequality_metric(u[indices[2]], u[indices[0]])
+        #invariants[12] = inequality_metric(u[indices[3]], u[indices[0]])
+        invariants[13] = inequality_metric(u[indices[4]], u[indices[1]])
+        invariants[14] = inequality_metric(u[indices[4]], u[indices[3]])
+        invariants[15] = inequality_metric(u[indices[6]], u[indices[4]])
     elif type == 'p':
         invariants[0] = invariant_metric(u[indices[13]], u[indices[14]])
         invariants[1] = invariant_metric(u[indices[11]], u[indices[14]])
@@ -213,6 +247,12 @@ def invariants(u, indices, type):
         invariants[7] = invariant_metric(u[indices[4]], u[indices[14]])
         invariants[8] = invariant_metric(u[indices[3]], u[indices[12]])
         invariants[9] = invariant_metric(u[indices[1]], u[indices[2]])
+        invariants[10] = inequality_metric(u[indices[1]], u[indices[0]])
+        invariants[11] = inequality_metric(u[indices[3]], u[indices[0]])
+        invariants[12] = inequality_metric(u[indices[7]], u[indices[0]])
+        invariants[13] = inequality_metric(u[indices[4]], u[indices[1]])
+        invariants[14] = inequality_metric(u[indices[4]], u[indices[3]])
+        invariants[15] = inequality_metric(u[indices[4]], u[indices[7]])
     else:
         return None
     return invariants

@@ -8,7 +8,7 @@ import subprocess
 import random
 
 start_time = time.time()
-indices_string = '0694546'
+indices_string = '1323242530'
 gene_tree_path = 'data/avian_genes_mapped' + indices_string + '.tre'
 species_tree_path = 'data/species_tree_mapped' + indices_string + '.tre'
 cmd = 'python3 rooting.py -i ' + species_tree_path + ' -o ' + gene_tree_path
@@ -28,11 +28,11 @@ print(time.time() - start_time)
 
 data_size = 1
 
-print("Percentage of tests where the true species tree is among the top 3 (of 105) rooted candidates:")
+'''print("Percentage of tests where the true species tree is among the top 3 (of 105) rooted candidates:")
 print(topk_count/data_size*100)
 print("Percentage of tests where the infered tree had the correct topology:")
 print(correct_topology_count/data_size*100)
 print("Percentage of tests where the inferred tree was the true rooted species tree :")
 print(correct_tree_count/data_size*100)
 print("Average RF distance (rooted, not normalized, i.e. fp+fn)")
-print(avg_rf_dist/data_size)
+print(avg_rf_dist/data_size)'''
