@@ -6,6 +6,7 @@ import numpy as np
 
 MAX_NUM_INVARIANT = 20
 CANDIDATE_SIZE = 5
+MAX_VAL = 100
 
 
 def main(args):
@@ -44,6 +45,7 @@ def main(args):
         unrooted_cater = dendropy.Tree.get(data=caterpillars[i].as_string(schema='newick'), schema='newick',
                                         rooting="force-unrooted", taxon_namespace=tns)
         if dendropy.calculate.treecompare.symmetric_difference(unrooted_cater, species_tree_toplogy) != 0:
+            score_v[i] = MAX_VAL
             continue
         print(i)
         #print(caterpillars[i])
@@ -54,6 +56,7 @@ def main(args):
         unrooted_pseudo = dendropy.Tree.get(data=pseudo_caterpillars[i].as_string(schema='newick'), schema='newick',
                                         rooting="force-unrooted", taxon_namespace=tns)
         if dendropy.calculate.treecompare.symmetric_difference(unrooted_pseudo, species_tree_toplogy) != 0:
+            score_v[len(caterpillars) + i] = MAX_VAL
             continue
         print(i+len(caterpillars))
         score_v[len(caterpillars) + i] = score(pseudo_caterpillars[i], pseudo_caterpillars[0], u_distribution, tns, quintets, "p")
@@ -63,6 +66,7 @@ def main(args):
         unrooted_balanced = dendropy.Tree.get(data=balanced[i].as_string(schema='newick'), schema='newick',
                                         rooting="force-unrooted", taxon_namespace=tns)
         if dendropy.calculate.treecompare.symmetric_difference(unrooted_balanced, species_tree_toplogy) != 0:
+            score_v[i + len(caterpillars) + len(pseudo_caterpillars)] = MAX_VAL
             continue
         print(i + len(caterpillars) + len(pseudo_caterpillars))
         score_v[i + len(caterpillars) + len(pseudo_caterpillars)] = score(balanced[i], balanced[0], u_distribution, tns, quintets, "b")

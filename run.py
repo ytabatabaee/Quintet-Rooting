@@ -8,10 +8,10 @@ import subprocess
 import random
 import glob
 
-def generate_data(indices_list):
+def generate_data(indices_list, true_species_tree_path, gene_tree_path, dataset_path, output_dir):
     for indices in indices_list:
         string_indices = ' '.join([str(i) for i in indices])
-        cmd = 'python3 data_reading.py -i ' + string_indices
+        cmd = 'python3 data_reading.py -i ' + string_indices + ' -t ' + true_species_tree_path + ' -g ' + gene_tree_path + ' -d ' + dataset_path + ' -o ' + output_dir
         print(cmd)
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
         out, err = p.communicate()
@@ -24,9 +24,23 @@ def generate_indices(taxa_count, n):
 
 
 taxa_count = 48
-n = 100
+n = 280
 
-topk_count = 0
+indices_list = generate_indices(taxa_count, n)
+with open('test_indices_with_lengths.txt', 'a') as fp:
+    fp.write(str(indices_list))
+
+model_condition = 'avian-0_5X-1000-500' # only this need to be changed afterward, perhaps take as input?
+true_species_tree_path = 'avian_dataset/avian-model-species.tre'
+gene_tree_path = 'data/avian_dataset/' + model_condition + '-all.f200.stripped.tre'
+dataset_path = 'data/avian_dataset/extracted_quintets/'
+
+generate_data(indices_list, true_species_tree_path, gene_tree_path, dataset_path, model_condition)
+
+#species_tree_list = glob.glob(dataset_path + 'species_tree_mapped_with_lengths*.tre')
+#print(len(species_tree_list))
+
+'''topk_count = 0
 correct_topology_count = 0
 correct_tree_count = 0
 avg_rf_dist = 0
@@ -34,22 +48,12 @@ caterpillar_count = 0
 balanced_count = 0
 pseudo_caterpillar_count = 0
 
-indices_list = generate_indices(taxa_count, n)
-with open('test_indices_with_lengths.txt', 'a') as fp:
-    fp.write(str(indices_list))
-generate_data(indices_list)
 
-#species_tree_list = glob.glob('data/species_tree_mapped_with_lengths*.tre')
-#print(len(species_tree_list))
-
-#gene_tree_list = glob.glob('data/avian_genes_mapped*.tre')
-#print(len(gene_tree_list))
-
-'''for species_tree in species_tree_list:
+for species_tree in species_tree_list:
     start_time = time.time()
     indices_string = ''.join(c for c in species_tree if c.isdigit())
-    species_tree_path = 'data/species_tree_mapped' + indices_string + '.tre'
-    gene_tree_path = 'data/avian_genes_mapped' + indices_string + '.tre'
+    species_tree_path = dataset_path + 'species_tree_mapped' + indices_string + '.tre'
+    gene_tree_path = dataset_path + model_condition + '/gene_trees_mapped' + indices_string + '.tre'
     cmd = 'python3 rooting.py -i ' + species_tree_path + ' -o ' + gene_tree_path
     print(cmd)
 
