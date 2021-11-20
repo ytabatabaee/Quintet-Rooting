@@ -7,6 +7,7 @@ import time
 import subprocess
 import random
 import glob
+import re
 
 def generate_data(indices_list, true_species_tree_path, gene_tree_path, dataset_path, output_dir):
     for indices in indices_list:
@@ -16,6 +17,7 @@ def generate_data(indices_list, true_species_tree_path, gene_tree_path, dataset_
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
         out, err = p.communicate()
 
+
 def generate_indices(taxa_count, n):
     indices_list = set()
     while len(indices_list) < n:
@@ -23,24 +25,33 @@ def generate_indices(taxa_count, n):
     return list(indices_list)
 
 
+def read_indicies_from_file():
+    with open('test_indices_with_lengths.txt', 'r') as fp:
+        indices_list_str = fp.read()
+    indices_list_str = indices_list_str.split(')')
+    indices_list = []
+    for item in indices_list_str:
+        indices_list.append([int(s) for s in item.replace('(', ' ').replace(',', ' ').split() if s.isdigit()])
+    return indices_list[:-1]
+
+
 taxa_count = 48
-n = 280
+n = 300
 
-indices_list = generate_indices(taxa_count, n)
-with open('test_indices_with_lengths.txt', 'a') as fp:
-    fp.write(str(indices_list))
-
-model_condition = 'avian-0_5X-1000-500' # only this need to be changed afterward, perhaps take as input?
+model_condition = 'avian-1X-1000-500' # only this need to be changed afterward, perhaps take as input?
 true_species_tree_path = 'avian_dataset/avian-model-species.tre'
 gene_tree_path = 'data/avian_dataset/' + model_condition + '-all.f200.stripped.tre'
 dataset_path = 'data/avian_dataset/extracted_quintets/'
 
-generate_data(indices_list, true_species_tree_path, gene_tree_path, dataset_path, model_condition)
+#indices_list = generate_indices(taxa_count, n)
+#indices_list = read_indicies_from_file()
+#generate_data(indices_list, true_species_tree_path, gene_tree_path, dataset_path, model_condition)
 
+model_list = glob.glob(dataset_path + model_condition + '/gene_trees_mapped*.tre')
 #species_tree_list = glob.glob(dataset_path + 'species_tree_mapped_with_lengths*.tre')
-#print(len(species_tree_list))
+print(len(model_list))
 
-'''topk_count = 0
+topk_count = 0
 correct_topology_count = 0
 correct_tree_count = 0
 avg_rf_dist = 0
@@ -49,9 +60,10 @@ balanced_count = 0
 pseudo_caterpillar_count = 0
 
 
-for species_tree in species_tree_list:
+for item in model_list:
     start_time = time.time()
-    indices_string = ''.join(c for c in species_tree if c.isdigit())
+    indices_string = ''.join(c for c in item.split('/')[-1] if c.isdigit())
+    #species_tree = dataset_path + 'species_tree_mapped_with_lengths' + indices_string + '.tre'
     species_tree_path = dataset_path + 'species_tree_mapped' + indices_string + '.tre'
     gene_tree_path = dataset_path + model_condition + '/gene_trees_mapped' + indices_string + '.tre'
     cmd = 'python3 rooting.py -i ' + species_tree_path + ' -o ' + gene_tree_path
@@ -78,7 +90,7 @@ for species_tree in species_tree_list:
 
     print(time.time() - start_time)
 
-data_size = len(species_tree_list)
+data_size = len(model_list)
 
 print("percentage of selected tree types")
 print("c", caterpillar_count/data_size*100, "b", balanced_count/data_size*100, "p", pseudo_caterpillar_count/data_size*100)
@@ -89,4 +101,4 @@ print(correct_topology_count/data_size*100)
 print("Percentage of tests where the inferred tree was the true rooted species tree :")
 print(correct_tree_count/data_size*100)
 print("Average RF distance (rooted, not normalized, i.e. fp+fn)")
-print(avg_rf_dist/data_size)'''
+print(avg_rf_dist/data_size)

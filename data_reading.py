@@ -30,12 +30,12 @@ def extract_quintet_tree(args):
     s = map_taxonnamespace(species_subtree.as_string(schema='newick'), subtree_taxa)
     species_subtree_mapped = dendropy.Tree.get(data=s, schema='newick')
     unrooted_species_tree = dendropy.Tree.get(data=s, schema='newick', rooting='force-unrooted')
-    if not os.path.exists(dataset_path + 'species_tree_mapped' + str_indices + '.tre'):
-        unrooted_species_tree.write_to_path(dest=dataset_path + 'species_tree_mapped_with_lengths' + str_indices + '.tre', schema='newick')
-        species_subtree_mapped.write_to_path(dest=dataset_path + 'species_tree_mapped' + str_indices + '.tre', schema='newick', suppress_edge_lengths=True,
+    unrooted_species_tree.write_to_path(dest=dataset_path + output_dir + '/species_tree_mapped_with_lengths' + str_indices + '.tre', schema='newick')
+    species_subtree_mapped.write_to_path(dest=dataset_path + output_dir + '/species_tree_mapped' + str_indices + '.tre', schema='newick', suppress_edge_lengths=True,
                                         suppress_internal_node_labels=True)
 
     # striping genes
+    
     if os.path.exists(dataset_path + output_dir + '/gene_trees_mapped' + str_indices + '.tre'):
         return
     gene_trees = dendropy.TreeList.get(path=gene_tree_path, schema='newick', taxon_namespace=tns)

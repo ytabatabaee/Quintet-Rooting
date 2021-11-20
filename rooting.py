@@ -181,7 +181,6 @@ def quintets_map(quintets, tns, map):
             if d == 0:
                 mapped_indices[i] = k
                 break
-
     return mapped_indices
 
 def taxon_set_map(t1, t2, tns):
@@ -198,7 +197,6 @@ def invariant_metric(a, b):
 
 def inequality_metric(a, b): # a < b
     return (a - b)
-
 
 
 # returns the set of invariants of this rooted tree using table 5 of allman's paper
@@ -263,25 +261,44 @@ def invariants(u, indices, type):
 
 
 '''def invariants(u, indices, type):
-    invariants = np.zeros(0)
+    invariant_score = 0
+    inequality_score = 0
     equivalence_classes = []
+    inequality_classes = []
     if type == 'c':
         equivalence_classes = [[0], [1], [2], [3, 12], [4, 11], [5, 8], [6, 7, 9, 10, 13, 14]]
+        inequality_classes = [[0, 1], [0, 3], [1, 4], [3, 4], [4, 6], [2, 1], [2, 5], [5, 4]] # [a, b] -> a > b, a and b are cluster indices
     elif type == 'b':
         equivalence_classes = [[0], [1, 2], [3, 12], [4, 5, 8, 11], [6, 7, 9, 10, 13, 14]]
+        inequality_classes = [[0, 1], [0, 2], [1, 3], [2, 3], [3, 4]]
     elif type == 'p':
         equivalence_classes = [[0], [1, 2], [3, 12], [7, 10], [4, 5, 6, 8, 9, 11, 13, 14]]
+        inequality_classes = [[0, 1], [0, 2], [0, 3], [1, 4], [2, 4], [3, 4]]
     for c in equivalence_classes:
+        inclass_distance = 0
         for i in range(len(c)):
             for j in range(i+1, len(c)):
-                invariants = np.append(invariants, u[indices[c[i]]] - u[indices[c[j]]])
-    return invariants'''
+                inclass_distance += invariant_metric(u[indices[c[i]]], u[indices[c[j]]])
+        if len(c) > 1:
+            invariant_score += inclass_distance/(len(c)*(len(c)-1)*0.5)
+    invariant_score = invariant_score# / len(equivalence_classes)
+
+    for ineq in inequality_classes: #distance between clusters
+        outclass_distance = 0
+        for i in equivalence_classes[ineq[0]]:
+            for j in equivalence_classes[ineq[1]]:
+                outclass_distance += inequality_metric(u[indices[j]], u[indices[i]])
+        inequality_score += outclass_distance/(len(equivalence_classes[ineq[0]])*len(equivalence_classes[ineq[1]]))
+    inequality_score = inequality_score# / len(inequality_classes)
+
+    return invariant_score + inequality_score'''
 
 
 def score(r, r_base, u_distribution, tns, quintets, type):
     map = taxon_set_map(r_base, r, tns)
     mapped_indices = quintets_map(quintets, tns, map)
     return np.sum(invariants(u_distribution, mapped_indices, type))
+    #return invariants(u_distribution, mapped_indices, type)
 
 
 def parse_args():
