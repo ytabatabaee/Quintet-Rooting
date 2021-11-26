@@ -24,8 +24,6 @@ def main(args):
     gene_trees = dendropy.TreeList.get(path=output_path, schema='newick', taxon_namespace=tns)
     u_count = np.zeros(len(quintets))
 
-    #print(len(quintets))
-
     for g in gene_trees:
         for i in range(len(quintets)):
             d = dendropy.calculate.treecompare.symmetric_difference(quintets[i], g)
@@ -47,9 +45,9 @@ def main(args):
         #if dendropy.calculate.treecompare.symmetric_difference(unrooted_cater, species_tree_toplogy) != 0:
         #    score_v[i] = MAX_VAL
         #    continue
-        print(i)
-        #print(caterpillars[i])
         score_v[i] = score(caterpillars[i], caterpillars[0], u_distribution, tns, quintets, "c")
+        #print(i, caterpillars[i], score_v[i],
+        #      dendropy.calculate.treecompare.symmetric_difference(caterpillars[i], true_species_tree), "c")
 
     pseudo_caterpillars = dendropy.TreeList.get(path='topologies/pseudo_caterpillar.tre', schema='newick', taxon_namespace=tns)
     for i in range(len(pseudo_caterpillars)):
@@ -58,8 +56,9 @@ def main(args):
         #if dendropy.calculate.treecompare.symmetric_difference(unrooted_pseudo, species_tree_toplogy) != 0:
         #    score_v[len(caterpillars) + i] = MAX_VAL
         #    continue
-        print(i+len(caterpillars))
         score_v[len(caterpillars) + i] = score(pseudo_caterpillars[i], pseudo_caterpillars[6], u_distribution, tns, quintets, "p")
+        #print(i+len(caterpillars), pseudo_caterpillars[i], score_v[len(caterpillars) + i],
+        #      dendropy.calculate.treecompare.symmetric_difference(pseudo_caterpillars[i], true_species_tree), "p")
 
     balanced = dendropy.TreeList.get(path='topologies/balanced.tre', schema='newick', taxon_namespace=tns)
     for i in range(len(balanced)):
@@ -68,26 +67,15 @@ def main(args):
         #if dendropy.calculate.treecompare.symmetric_difference(unrooted_balanced, species_tree_toplogy) != 0:
         #    score_v[i + len(caterpillars) + len(pseudo_caterpillars)] = MAX_VAL
         #    continue
-        print(i + len(caterpillars) + len(pseudo_caterpillars))
         score_v[i + len(caterpillars) + len(pseudo_caterpillars)] = score(balanced[i], balanced[0], u_distribution, tns, quintets, "b")
+        #print(i + len(caterpillars) + len(pseudo_caterpillars), balanced[i], score_v[i + len(caterpillars) + len(pseudo_caterpillars)],
+        #      dendropy.calculate.treecompare.symmetric_difference(balanced[i], true_species_tree), "b")
 
     min_indices = sorted(range(len(score_v)), key = lambda sub: score_v[sub])[:CANDIDATE_SIZE]
-    #idx = np.argpartition(score_v, CANDIDATE_SIZE)
-    #print(res)
-    #print(idx[:CANDIDATE_SIZE])
-    #min_indices = idx[:CANDIDATE_SIZE]
-    min_index = min_indices[0]#np.where(score_v == score_v.min())[0][0] # this is not fair
-    #print(min_index)
-    #print(min_indices)
-    #print(min_index)
-    #print(score_v)
-    #print(score_v[min_index])
-    #print(min_indices)
 
     rooted_candidates = []
     rooted_candidate_types = []
     r_base = []
-
 
     for idx in min_indices:
         if idx < 60:
@@ -103,17 +91,7 @@ def main(args):
             rooted_candidate_types.append('b')
             r_base.append(balanced[0])
 
-    #print(min_index)
-    rooted_tree = None
-    if min_index < 60:
-        rooted_tree = caterpillars[min_index]
-    elif min_index >= 60 and min_index < 75:
-        rooted_tree = pseudo_caterpillars[min_index-60]
-    elif min_index >= 75 and min_index < 105:
-        rooted_tree = balanced[min_index-75]
-
-
-    print("best rooted tree", rooted_tree)
+    print("best rooted tree", rooted_candidates[0])
     print("true species tree:", true_species_tree)
 
     unrooted_tree = dendropy.Tree.get(data=rooted_candidates[0].as_string(schema='newick'), schema='newick',
@@ -121,7 +99,7 @@ def main(args):
 
     correct_topology_flag = False
     correct_tree_flag = False
-    if dendropy.calculate.treecompare.symmetric_difference(rooted_tree, true_species_tree) == 0:
+    if dendropy.calculate.treecompare.symmetric_difference(rooted_candidates[0], true_species_tree) == 0:
         correct_tree_flag = True
     if dendropy.calculate.treecompare.symmetric_difference(unrooted_tree, species_tree_toplogy) == 0:
         correct_topology_flag = True
@@ -133,51 +111,29 @@ def main(args):
         if dendropy.calculate.treecompare.symmetric_difference(rooted_candidates[i], true_species_tree) == 0:
               top_five_flag = True
 
-    #print("min score", np.min(score_v))
-    #print(score_v)
-    # print(sorted(score_v))
 
-
-    quintet_idx = 100
-    for k in range(len(quintets)):
-        d = dendropy.calculate.treecompare.symmetric_difference(quintets[k], unrooted_tree)
-        if d == 0:
-            quintet_idx = k
-            break
-    map = taxon_set_map(quintets[0], quintets[quintet_idx], tns)
-    #print(map)
+    map = taxon_set_map(r_base[0], rooted_candidates[0], tns)
     mapped_indices = quintets_map(quintets, tns, map)
     #for i in mapped_indices:
-    #    print(quintets[i])
-    for i in mapped_indices:
-        print(u_distribution[i])
-    #print(mapped_indices)
+    #    print(u_distribution[i])
 
     print(rooted_candidate_types[0])
     print(int(top_five_flag))
     print(int(correct_tree_flag))
     print(int(correct_topology_flag))
-    print(dendropy.calculate.treecompare.symmetric_difference(rooted_tree, true_species_tree))
+    print(dendropy.calculate.treecompare.symmetric_difference(rooted_candidates[0], true_species_tree))
     return
 
 
 def quintets_map(quintets, tns, map):
     q_mapped = quintets.clone() # this mean q_mapped is different from quintets!
     mapped_indices = np.zeros(len(quintets), dtype=int)
-    #print("map", map)
-    #print("tns", tns)
     for i in range(len(quintets)):
         q_mapped_str = str(quintets[i])
-        #print(q_mapped_str)
-        #print(map)
         for j in range(len(map)):
             idx = str(quintets[i]).index(str(tns[j]).replace('\'', ''))
-            #print(idx)
             q_mapped_str = q_mapped_str[:idx] + str(map[j]).replace('\'', '') + q_mapped_str[idx+1:]
-            #print(q_mapped_str)
 
-        #print(q_mapped_str)
-        #print("======")
         q_mapped[i] = dendropy.Tree.get(data=q_mapped_str+';', schema="newick")
         for k in range(len(quintets)):
             d = dendropy.calculate.treecompare.symmetric_difference(quintets[k], q_mapped[i])
@@ -268,7 +224,7 @@ def invariants(u, indices, type):
     inequality_score = 0
     equivalence_classes = []
     inequality_classes = []
-    print(indices)
+    #print(indices)
     #for i in indices:
     #    print(u[i])
     if type == 'c':
@@ -281,7 +237,7 @@ def invariants(u, indices, type):
         equivalence_classes = [[0], [1, 2], [3, 12], [7, 10], [4, 5, 6, 8, 9, 11, 13, 14]]
         inequality_classes = [[0, 1], [0, 2], [0, 3], [1, 4], [2, 4], [3, 4]]
     for c in equivalence_classes:
-        print([u[indices[i]] for i in c])
+        #print([u[indices[i]] for i in c]) #** important
         inclass_distance = 0
         for i in range(len(c)):
             for j in range(len(c)):
@@ -292,40 +248,16 @@ def invariants(u, indices, type):
 
     for ineq in inequality_classes: #distance between clusters
         outclass_distance = 0
+        #print("check " + str(ineq[0]) + " > " + str(ineq[1]))
         for i in equivalence_classes[ineq[0]]:
             for j in equivalence_classes[ineq[1]]:
+                #print("check " + str(u[indices[i]]) + " > " + str(u[indices[j]]) + " with score " +  str(inequality_metric(u[indices[j]], u[indices[i]])))
                 outclass_distance += inequality_metric(u[indices[j]], u[indices[i]])
         inequality_score += outclass_distance/(len(equivalence_classes[ineq[0]]))#*len(equivalence_classes[ineq[1]]))
     #inequality_score = 0# / len(inequality_classes)
 
     return invariant_score + inequality_score
 
-
-'''def score(r, r_base, u_distribution, tns, quintets, type):
-    quintet_idx = 100
-    unrooted_r = dendropy.Tree.get(data=r.as_string(schema='newick'), schema='newick',
-                                    rooting="force-unrooted", taxon_namespace=tns)
-    for k in range(len(quintets)):
-        d = dendropy.calculate.treecompare.symmetric_difference(quintets[k], unrooted_r)
-        if d == 0:
-            quintet_idx = k
-            break
-
-    quintet_idx_base = 100
-    unrooted_r_base = dendropy.Tree.get(data=r_base.as_string(schema='newick'), schema='newick',
-                                    rooting="force-unrooted", taxon_namespace=tns)
-    for k in range(len(quintets)):
-        d = dendropy.calculate.treecompare.symmetric_difference(quintets[k], unrooted_r_base)
-        if d == 0:
-            quintet_idx_base = k
-            break
-    #print(r)
-    #print(quintets[quintet_idx])
-    map = taxon_set_map(quintets[0], quintets[quintet_idx], tns)
-    #print(map)
-    mapped_indices = quintets_map(quintets, tns, map)
-    #return np.sum(invariants(u_distribution, mapped_indices, type))
-    return invariants(u_distribution, mapped_indices, type)'''
 
 def score(r, r_base, u_distribution, tns, quintets, type):
     map = taxon_set_map(r_base, r, tns)

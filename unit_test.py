@@ -8,7 +8,7 @@ import subprocess
 import random
 
 start_time = time.time()
-indices_string = '1719274041'#'313192832'#
+indices_string = '913143542'#'313192832'#
 model_condition = 'avian-2X-1000-500-all'
 gene_tree_path = 'data/avian_dataset/extracted_quintets/' + model_condition + '/gene_trees_mapped' + indices_string + '.tre'
 species_tree_path = 'data/avian_dataset/extracted_quintets/species_tree_mapped' + indices_string + '.tre'

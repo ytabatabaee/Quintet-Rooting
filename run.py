@@ -39,24 +39,24 @@ def read_indicies_from_file():
 taxa_count = 48
 n = 10
 
-# model_condition = 'avian-1X-1000-500' # only this need to be changed afterward, perhaps take as input?
+model_condition = 'avian-2X-1000-500-all' # only this need to be changed afterward, perhaps take as input?
 true_species_tree_path = 'avian_dataset/avian-model-species.tre'
 #gene_tree_path = 'data/avian_dataset/' + model_condition + '-all.f200.stripped.tre'
 dataset_path = 'data/avian_dataset/extracted_quintets/'
 
 start_time = time.time()
 
-indices_list = generate_indices(taxa_count, n)
+#indices_list = generate_indices(taxa_count, n)
 #indices_list = read_indicies_from_file()
-generate_data(indices_list, true_species_tree_path, dataset_path)
+#generate_data(indices_list, true_species_tree_path, dataset_path)
 
-print(time.time() - start_time)
+#print(time.time() - start_time)
 
-#model_list = glob.glob(dataset_path + model_condition + '/gene_trees_mapped*.tre')
+model_list = glob.glob(dataset_path + model_condition + '/gene_trees_mapped*.tre')
 #species_tree_list = glob.glob(dataset_path + 'species_tree_mapped_with_lengths*.tre')
 #print(len(model_list))
 
-'''topk_count = 0
+topk_count = 0
 correct_topology_count = 0
 correct_tree_count = 0
 avg_rf_dist = 0
@@ -106,4 +106,4 @@ print(correct_topology_count/data_size*100)
 print("Percentage of tests where the inferred tree was the true rooted species tree :")
 print(correct_tree_count/data_size*100)
 print("Average RF distance (rooted, not normalized, i.e. fp+fn)")
-print(avg_rf_dist/data_size)'''
+print(avg_rf_dist/data_size)
