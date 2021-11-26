@@ -9,13 +9,14 @@ import random
 import glob
 import re
 
-def generate_data(indices_list, true_species_tree_path, gene_tree_path, dataset_path, output_dir):
+def generate_data(indices_list, true_species_tree_path, dataset_path):
     for indices in indices_list:
         string_indices = ' '.join([str(i) for i in indices])
-        cmd = 'python3 data_reading.py -i ' + string_indices + ' -t ' + true_species_tree_path + ' -g ' + gene_tree_path + ' -d ' + dataset_path + ' -o ' + output_dir
+        cmd = 'python3 data_reading.py -i ' + string_indices + ' -t ' + true_species_tree_path + ' -d ' + dataset_path
         print(cmd)
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
         out, err = p.communicate()
+        print(out.decode("utf-8"))
 
 
 def generate_indices(taxa_count, n):
@@ -36,22 +37,26 @@ def read_indicies_from_file():
 
 
 taxa_count = 48
-n = 300
+n = 10
 
-model_condition = 'avian-1X-1000-500' # only this need to be changed afterward, perhaps take as input?
+# model_condition = 'avian-1X-1000-500' # only this need to be changed afterward, perhaps take as input?
 true_species_tree_path = 'avian_dataset/avian-model-species.tre'
-gene_tree_path = 'data/avian_dataset/' + model_condition + '-all.f200.stripped.tre'
+#gene_tree_path = 'data/avian_dataset/' + model_condition + '-all.f200.stripped.tre'
 dataset_path = 'data/avian_dataset/extracted_quintets/'
 
-#indices_list = generate_indices(taxa_count, n)
+start_time = time.time()
+
+indices_list = generate_indices(taxa_count, n)
 #indices_list = read_indicies_from_file()
-#generate_data(indices_list, true_species_tree_path, gene_tree_path, dataset_path, model_condition)
+generate_data(indices_list, true_species_tree_path, dataset_path)
 
-model_list = glob.glob(dataset_path + model_condition + '/gene_trees_mapped*.tre')
+print(time.time() - start_time)
+
+#model_list = glob.glob(dataset_path + model_condition + '/gene_trees_mapped*.tre')
 #species_tree_list = glob.glob(dataset_path + 'species_tree_mapped_with_lengths*.tre')
-print(len(model_list))
+#print(len(model_list))
 
-topk_count = 0
+'''topk_count = 0
 correct_topology_count = 0
 correct_tree_count = 0
 avg_rf_dist = 0
@@ -101,4 +106,4 @@ print(correct_topology_count/data_size*100)
 print("Percentage of tests where the inferred tree was the true rooted species tree :")
 print(correct_tree_count/data_size*100)
 print("Average RF distance (rooted, not normalized, i.e. fp+fn)")
-print(avg_rf_dist/data_size)
+print(avg_rf_dist/data_size)'''

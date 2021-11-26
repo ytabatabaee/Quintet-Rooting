@@ -8,9 +8,10 @@ import subprocess
 import random
 
 start_time = time.time()
-indices_string = '824374041'
-gene_tree_path = 'data/avian_genes_mapped' + indices_string + '.tre'
-species_tree_path = 'data/species_tree_mapped' + indices_string + '.tre'
+indices_string = '1719274041'#'313192832'#
+model_condition = 'avian-2X-1000-500-all'
+gene_tree_path = 'data/avian_dataset/extracted_quintets/' + model_condition + '/gene_trees_mapped' + indices_string + '.tre'
+species_tree_path = 'data/avian_dataset/extracted_quintets/species_tree_mapped' + indices_string + '.tre'
 cmd = 'python3 rooting.py -i ' + species_tree_path + ' -o ' + gene_tree_path
 print(cmd)
 
