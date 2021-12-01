@@ -26,7 +26,7 @@ for item in model_list:
         os.makedirs(output_dir + model_condition)
 
     output_path = output_dir + model_condition + '/estimated_species_tree' + indices_string + '.tre'
-    cmd = 'python ../../MinVar-Rooting/FastRoot.py -m ' + method +' -i ' + species_tree_with_lengths + ' -o ' + output_path
+    cmd = 'python3 ../../MinVar-Rooting/FastRoot.py -m ' + method +' -i ' + species_tree_with_lengths + ' -o ' + output_path
 
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
     out, err = p.communicate()

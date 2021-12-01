@@ -16,6 +16,8 @@ output_dir = '../data/avian_dataset/mad_trees/'
 count = 0
 avg_clade_distance = 0
 
+print(len(model_list))
+
 for item in model_list:
     indices_string = ''.join(c for c in item.split('/')[-1] if c.isdigit())
     species_tree_with_lengths = dataset_path + 'species_tree_mapped_with_lengths' + indices_string + '.tre'
@@ -28,7 +30,7 @@ for item in model_list:
     st_with_length = dendropy.Tree.get(path=species_tree_with_lengths, schema='newick')
     with open('temp.tre', 'w') as f:
         f.write(str(st_with_length)[:str(st_with_length).rindex(')')+1]+';')
-    cmd = 'python ../../mad/mad.py  temp.tre -n'
+    cmd = 'python3 ../../mad/mad.py  temp.tre -n'
 
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
     out, err = p.communicate()

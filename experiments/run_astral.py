@@ -8,7 +8,7 @@ def rf_distance(t1, t2):
     t2.encode_bipartitions()
     return dendropy.calculate.treecompare.symmetric_difference(t1, t2)
 
-model_condition = 'avian-1X-1000-1500-all' # only change this
+model_condition = 'avian-1X-1000-1000-all' # only change this
 dataset_path = '../data/avian_dataset/extracted_quintets/'
 model_list = glob.glob(dataset_path + model_condition + '/gene_trees_mapped*.tre')
 output_dir = '../data/avian_dataset/astral_trees/'
@@ -25,7 +25,7 @@ for item in model_list:
     if not os.path.exists(output_dir + model_condition):
         os.makedirs(output_dir + model_condition)
 
-    cmd = 'java -jar ../../Astral/astral.5.7.8.jar -i' + gene_tree_path + ' -o ' + output_path + ' 2>out.log'
+    cmd = 'java -jar ../../ASTRAL/Astral/astral.5.7.8.jar -i' + gene_tree_path + ' -o ' + output_path + ' 2>out.log'
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
     out, err = p.communicate()
 
