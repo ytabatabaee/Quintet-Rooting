@@ -3,6 +3,11 @@ import glob
 import subprocess
 import dendropy
 
+def rf_distance(t1, t2):
+    t1.encode_bipartitions()
+    t2.encode_bipartitions()
+    return dendropy.calculate.treecompare.symmetric_difference(t1, t2)
+
 model_condition = 'avian-1X-1000-500-all'
 dataset_path = '../data/avian_dataset/extracted_quintets/'
 model_list = glob.glob(dataset_path + model_condition + '/gene_trees_mapped*.tre')
@@ -12,7 +17,7 @@ output_dir = '../data/avian_dataset/' + method + '_trees/'
 count = 0
 avg_clade_distance = 0
 
-for item in model_list[:10]:
+for item in model_list:
     indices_string = ''.join(c for c in item.split('/')[-1] if c.isdigit())
     species_tree_with_lengths = dataset_path + 'species_tree_mapped_with_lengths' + indices_string + '.tre'
     true_species_tree_path = dataset_path + 'species_tree_mapped' + indices_string + '.tre'
@@ -30,11 +35,11 @@ for item in model_list[:10]:
                                         rooting="force-rooted", taxon_namespace=tns)
     mp_species_tree = dendropy.Tree.get(path=output_path, schema='newick',
                                         rooting="force-rooted", taxon_namespace=tns, suppress_edge_lengths=True)
-    d = dendropy.calculate.treecompare.symmetric_difference(true_species_tree, mp_species_tree)
+    d = rf_distance(true_species_tree, mp_species_tree)
     avg_clade_distance += d
     count += int(d == 0)
 
-data_size = len(model_list[:10])
+data_size = len(model_list)
 
 print("Test count")
 print(data_size)
