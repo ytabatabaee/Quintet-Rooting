@@ -1,0 +1,4 @@
+Percentage of tests where the infered tree had the correct topology:
+93.52941176470588
+Average RF distance (not normalized, i.e. fp+fn)
+0.12941176470588237

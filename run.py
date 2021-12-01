@@ -39,7 +39,7 @@ def read_indicies_from_file():
 taxa_count = 48
 n = 10
 
-model_condition = 'avian-2X-1000-500-all' # only this need to be changed afterward, perhaps take as input?
+model_condition = 'avian-0_5X-1000-500-all' # only this need to be changed afterward, perhaps take as input?
 true_species_tree_path = 'avian_dataset/avian-model-species.tre'
 #gene_tree_path = 'data/avian_dataset/' + model_condition + '-all.f200.stripped.tre'
 dataset_path = 'data/avian_dataset/extracted_quintets/'
@@ -60,6 +60,7 @@ topk_count = 0
 correct_topology_count = 0
 correct_tree_count = 0
 avg_rf_dist = 0
+avg_rf_dist_unrooted = 0
 caterpillar_count = 0
 balanced_count = 0
 pseudo_caterpillar_count = 0
@@ -80,6 +81,7 @@ for item in model_list:
     lis = list(out.decode("utf-8").split("\n"))
     length = len(lis)
 
+    avg_rf_dist_unrooted += int(lis[length-7])
     type = lis[length-6]
     topk_count += int(lis[length-5])
     correct_tree_count += int(lis[length-4])
@@ -105,5 +107,7 @@ print("Percentage of tests where the infered tree had the correct topology:")
 print(correct_topology_count/data_size*100)
 print("Percentage of tests where the inferred tree was the true rooted species tree :")
 print(correct_tree_count/data_size*100)
-print("Average RF distance (rooted, not normalized, i.e. fp+fn)")
+print("Average Clade distance (rooted, not normalized, i.e. fp+fn)")
 print(avg_rf_dist/data_size)
+print("Average RF distance (not normalized, i.e. fp+fn)")
+print(avg_rf_dist_unrooted/data_size)
