@@ -61,12 +61,12 @@ correct_topology_count = 0
 correct_tree_count = 0
 avg_rf_dist = 0
 avg_rf_dist_unrooted = 0
-caterpillar_count = 0
-balanced_count = 0
-pseudo_caterpillar_count = 0
+
+types_to_num = ['c', 'b', 'p']
+class_confusion_matrix = np.zeros((3, 3))
 
 
-for item in model_list:
+for item in model_list[:10]:
     start_time = time.time()
     indices_string = ''.join(c for c in item.split('/')[-1] if c.isdigit())
     #species_tree = dataset_path + 'species_tree_mapped_with_lengths' + indices_string + '.tre'
@@ -81,6 +81,7 @@ for item in model_list:
     lis = list(out.decode("utf-8").split("\n"))
     length = len(lis)
 
+    true_type = lis[length-8]
     avg_rf_dist_unrooted += int(lis[length-7])
     type = lis[length-6]
     topk_count += int(lis[length-5])
@@ -88,19 +89,14 @@ for item in model_list:
     correct_topology_count += int(lis[length-3])
     avg_rf_dist += int(lis[length-2])
 
-    if type == 'c':
-        caterpillar_count += 1
-    elif type == 'b':
-        balanced_count += 1
-    elif type == 'p':
-        pseudo_caterpillar_count += 1
+    class_confusion_matrix[types_to_num.index(type)][types_to_num.index(true_type)] += 1
 
     print(time.time() - start_time)
 
-data_size = len(model_list)
+data_size = len(model_list[:10])
 
-print("percentage of selected tree types")
-print("c", caterpillar_count/data_size*100, "b", balanced_count/data_size*100, "p", pseudo_caterpillar_count/data_size*100)
+print("class confusion matrix of types (rows are predicted, columns are true) (c, b, p)")
+print(class_confusion_matrix)
 print("Percentage of tests where the true species tree is among the top 5 (of 105) rooted candidates:")
 print(topk_count/data_size*100)
 print("Percentage of tests where the infered tree had the correct topology:")

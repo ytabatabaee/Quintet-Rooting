@@ -38,6 +38,8 @@ def main(args):
     print("estimated gene tree distribution")
     print(u_distribution)
 
+    true_species_tree_type = None
+
     # scoring each of the 105 trees
     score_v = np.zeros(105)
 
@@ -48,6 +50,8 @@ def main(args):
             score_v[i] = MAX_VAL
             continue
         score_v[i] = score(caterpillars[i], caterpillars[0], u_distribution, tns, quintets, "c")
+        if rf_distance(true_species_tree, caterpillars[i]) == 0:
+            true_species_tree_type = 'c'
         #print(i+1, caterpillars[i])#, score_v[i], rf_distance(caterpillars[i], true_species_tree), "c")
 
 
@@ -58,6 +62,8 @@ def main(args):
             score_v[len(caterpillars) + i] = MAX_VAL
             continue
         score_v[len(caterpillars) + i] = score(pseudo_caterpillars[i], pseudo_caterpillars[6], u_distribution, tns, quintets, "p")
+        if rf_distance(true_species_tree, pseudo_caterpillars[i]) == 0:
+            true_species_tree_type = 'p'
         #print(i+len(caterpillars)+1, pseudo_caterpillars[i])#, score_v[len(caterpillars) + i],
         #      rf_distance(pseudo_caterpillars[i], true_species_tree), "p")
 
@@ -69,6 +75,9 @@ def main(args):
             score_v[i + len(caterpillars) + len(pseudo_caterpillars)] = MAX_VAL
             continue
         score_v[i + len(caterpillars) + len(pseudo_caterpillars)] = score(balanced[i], balanced[0], u_distribution, tns, quintets, "b")
+        if rf_distance(true_species_tree, balanced[i]) == 0:
+            true_species_tree_type = 'b'
+
         #print(i + len(caterpillars) + len(pseudo_caterpillars)+1, balanced[i])#, score_v[i + len(caterpillars) + len(pseudo_caterpillars)],
         #      rf_distance(balanced[i], true_species_tree), "b")
 
@@ -116,6 +125,7 @@ def main(args):
     map = taxon_set_map(r_base[0], rooted_candidates[0], tns)
     mapped_indices = quintets_map(quintets, tns, map)
 
+    print(true_species_tree_type)
     print(rf_distance(unrooted_tree, species_tree_toplogy))
     print(rooted_candidate_types[0])
     print(int(top_five_flag))
