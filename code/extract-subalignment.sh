@@ -9,7 +9,7 @@ do
     esac
 done
 
-for case in $(seq 65 $test_cases)
+for case in $(seq 1 $test_cases)
 do
 	case_folder="$output_folder/$case"
 	mkdir $case_folder
