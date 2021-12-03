@@ -1,0 +1,2 @@
+Correct rooting percentage = 12.6984126984
+Average difference = 2.73015873016
