@@ -1,0 +1,42 @@
+avian-1X-1000-250-all
+Test count
+500
+Percentage of tests where the infered tree had the correct topology:
+75.4
+Average RF distance (not normalized, i.e. fp+fn)
+0.5
+avian-1X-1000-500-all
+Test count
+500
+Percentage of tests where the infered tree had the correct topology:
+93.8
+Average RF distance (not normalized, i.e. fp+fn)
+0.128
+avian-1X-1000-1000-all
+Test count
+500
+Percentage of tests where the infered tree had the correct topology:
+96.39999999999999
+Average RF distance (not normalized, i.e. fp+fn)
+0.072
+avian-1X-1000-1500-all
+Test count
+500
+Percentage of tests where the infered tree had the correct topology:
+96.8
+Average RF distance (not normalized, i.e. fp+fn)
+0.064
+avian-2X-1000-500-all
+Test count
+500
+Percentage of tests where the infered tree had the correct topology:
+95.39999999999999
+Average RF distance (not normalized, i.e. fp+fn)
+0.1
+avian-0_5X-1000-500-all
+Test count
+500
+Percentage of tests where the infered tree had the correct topology:
+90.60000000000001
+Average RF distance (not normalized, i.e. fp+fn)
+0.192
