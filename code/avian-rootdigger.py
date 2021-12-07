@@ -3,7 +3,6 @@ import os
 import argparse
 
 def extract_model_subtree(test_case_no, test_case_folder, model_tree_path, output_path):
-	print("subtree extraction\n")
 	model_tree = dendropy.Tree.get(path=model_tree_path, rooting='force-rooted', schema='newick')
 	
 	subtree_taxa = []
@@ -17,37 +16,49 @@ def extract_model_subtree(test_case_no, test_case_folder, model_tree_path, outpu
 	outfile.close()
 	command = "sed -e \"s/\[&R\] //g\" -i " + output_path
 	os.system(command)
-	print("extracted\n")
+	print("subtree extracted\n")
 
-def run_rootdigger(test_case_folder, test_case_count, model_tree_path, rootdigger_path):
+def run_rootdigger(test_case_folder, test_case_count, model_tree_path, rootdigger_path, output_folder, log_filename, stat_filename):
 	
-	rootdigger_log = open(test_case_folder + "/avian-rootdigger.log", "w")
+	rootdigger_log = open(output_folder + "/" + log_filename, "w")
 	
 	correct_count = 0.0
 	total_sym_diff = 0.0
 	
 	for test_case_no in range(1, test_case_count + 1):
 		print("Test case ", test_case_no)
+        
+		case_output_folder = output_folder + '/' + str(test_case_no)
+		os.mkdir(case_output_folder)
 
 		model_subtree_path = test_case_folder + '/' + str(test_case_no) + '/' + str(test_case_no) + '.model.tre'
-		alignment_path = test_case_folder + '/' + str(test_case_no) + '/' + str(test_case_no) + '.fasta'
-		rooted_path = test_case_folder + '/' + str(test_case_no) + '/' + str(test_case_no) + '.root.tre'
-		log_path = test_case_folder + '/' + str(test_case_no) + '/' + str(test_case_no) + '.log'
-
+                
 		extract_model_subtree(test_case_no, test_case_folder, model_tree_path, model_subtree_path)
+        
+		alignment_path = test_case_folder + '/' + str(test_case_no) + '/' + str(test_case_no) + '.fasta'
+		log_path = case_output_folder + '/' + str(test_case_no) + '.log'
 
-		#command = rootdigger_path + ' --msa ' + alignment_path + ' --tree ' + model_subtree_path + ' > ' + log_path
-		command = rootdigger_path + ' --msa ' + alignment_path + ' --tree ' + model_subtree_path
+		command = rootdigger_path + ' --msa ' + alignment_path + ' --tree ' + model_subtree_path + ' --exhaustive > ' + log_path
 		os.system(command)
-		
-		command = "mv " + model_subtree_path + ".rooted.tree " + rooted_path
-
-		#command = "grep -v -E \"^\[\" " + log_path + " | grep -v -E \"^Inf\" > " + rooted_path
+        
+		default_rooted_path = model_subtree_path + '.rooted.tree'
+		default_lwr_path = model_subtree_path + '.lwr.tree'
+		default_ckp_path = model_subtree_path + '.ckp'
+        
+		output_rooted_path = case_output_folder + '/' + str(test_case_no) + '.rooted.tree'
+		output_lwr_path = case_output_folder + '/' + str(test_case_no) + '.lwr.tree'
+		output_ckp_path = case_output_folder + '/' + str(test_case_no) + '.ckp'
+        
+		command = "mv " + default_rooted_path + " " + output_rooted_path
+		os.system(command)
+		command = "mv " + default_lwr_path + " " + output_lwr_path
+		os.system(command)
+		command = "mv " + default_ckp_path + " " + output_ckp_path
 		os.system(command)
 
 		tns = dendropy.TaxonNamespace()
 		ref_tree = dendropy.Tree.get(path=model_subtree_path, rooting='force-rooted', schema='newick', taxon_namespace=tns)
-		est_tree = dendropy.Tree.get(path=rooted_path, rooting='force-rooted', schema='newick', taxon_namespace=tns)
+		est_tree = dendropy.Tree.get(path=output_rooted_path, rooting='force-rooted', schema='newick', taxon_namespace=tns)
 		ref_tree.encode_bipartitions()
 		est_tree.encode_bipartitions()
 		sym_diff = dendropy.calculate.treecompare.symmetric_difference(ref_tree, est_tree)
@@ -65,13 +76,13 @@ def run_rootdigger(test_case_folder, test_case_count, model_tree_path, rootdigge
 
 	rootdigger_log.close()		
 
-	rootdigger_stat = open(test_case_folder + "/avian-rootdigger-stat.txt", "w")
+	rootdigger_stat = open(output_folder + "/" + stat_filename, "w")
 
 	correct_pct = (correct_count / test_case_count) * 100.0
 	avg_sym_diff = (total_sym_diff / test_case_count)
 
 	rootdigger_stat.write("Correct rooting percentage = " + str(correct_pct) + "\n")
-	rootdigger_stat.write("Average difference = " + str(avg_sym_diff) + "\n")
+	rootdigger_stat.write("Average symmetric difference = " + str(avg_sym_diff) + "\n")
 	rootdigger_stat.flush()
 	rootdigger_stat.close()
 
@@ -80,17 +91,23 @@ def main():
     
     parser.add_argument("-f", "--test_case_folder", type=str, help="Folder with all test cases (subfolders per test case)", required=True)
     parser.add_argument("-c", "--test_case_count", type=int, help="No. of test cases", required=True)
-    parser.add_argument("-m", "--model_tree_path", type=str, help="Model tree path", required=True)
+    parser.add_argument("-m", "--model_tree_path", type=str, help="Path to model tree containing 48 species", required=True)
     parser.add_argument("-r", "--rootdigger_path", type=str, help="Rootdigger binary path", required=True)
-    
+    parser.add_argument("-o", "--output_folder", type=str, help="Subfolders per test case will be created", required=True)
+    parser.add_argument("-l", "--log_filename", type=str, help="Filename for per test case log", required=False, default="rootdigger.log")
+    parser.add_argument("-s", "--stat_filename", type=str, help="Filename for aggregated statistics", required=False, default="rootdigger.stat")
+
     args = parser.parse_args()
     
     test_case_folder = args.test_case_folder
     test_case_count = args.test_case_count
     model_tree_path = args.model_tree_path
     rootdigger_path = args.rootdigger_path
+    output_folder = args.output_folder
+    log_filename = args.log_filename
+    stat_filename = args.stat_filename
     
-    run_rootdigger(test_case_folder, test_case_count, model_tree_path, rootdigger_path)
+    run_rootdigger(test_case_folder, test_case_count, model_tree_path, rootdigger_path, output_folder, log_filename, stat_filename)
 
 if __name__ == "__main__":
     main()
