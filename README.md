@@ -3,11 +3,11 @@
 Quintet Rooting is a method for rooting species trees from multi-locus datasets, which is based on a proof of identifiability of the rooted species tree under the multi-species coalescent (MSC) model established by Allman, Degnan, and Rhodes (J Math Biol, 2011).
 
 ## Dependencies
-- Python 3.x
+- [Python 3.x](https://www.python.org)
 - [Dendropy 4.x](https://dendropy.org/index.html)
 - [Numpy](https://numpy.org)
 
-To install the above dependencies, you can use `pip install -r requirements.txt`.
+After installing Python 3 and pip, you can use `pip install -r requirements.txt` to install the above dependencies.
 
 ## Usage
 ### Rooting an unrooted species tree
