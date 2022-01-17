@@ -178,24 +178,3 @@ def parse_args():
 
 if __name__ == "__main__":
     main(parse_args())
-
-
-'''
-species_tree = dendropy.Tree.get(path=species_tree_path, schema='newick',
-                                     taxon_namespace=tns, rooting="default-rooted")
-subtree_taxa = [tns[i].label for i in range(10)]
-species_subtree = species_tree.extract_tree_with_taxa_labels(labels=subtree_taxa, suppress_unifurcations=True)
-print(subtree_taxa)
-start_time = time.time()
-gene_trees = dendropy.TreeList.get(path=gene_tree_path, schema='newick', taxon_namespace=tns)
-print(time.time() - start_time)
-induced_gene_trees = dendropy.TreeList()
-for g in gene_trees:
-    g_subtree = g.extract_tree_with_taxa_labels(labels=subtree_taxa, suppress_unifurcations=True)
-    induced_gene_trees.read(data=g_subtree.as_string(schema='newick'), schema='newick')
-print(time.time() - start_time)
-species_subtree.write_to_path(dest='avian_dataset/avian-model-species-10.tre', schema='newick')
-induced_gene_trees.write_to_path(dest=gene_tree_path + '_10' + '.tre', schema='newick')
-print(time.time() - start_time)
-return
-'''
