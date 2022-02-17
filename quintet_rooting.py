@@ -13,6 +13,7 @@ def main(args):
     gene_tree_path = args.genetrees
     output_path = args.outputtree
     sampling_method = args.samplingmethod
+    random.seed(args.seed)
 
     # reading gene tree and species tree topology files
     tns = dendropy.TaxonNamespace()
@@ -31,7 +32,7 @@ def main(args):
 
     taxon_set = [t.label for t in tns]
     sample_quintet_taxa = []
-    if sampling_method == 'd':
+    if len(taxon_set) == 5 or sampling_method == 'd':
         sample_quintet_taxa = list(itertools.combinations(taxon_set, 5))
     elif sampling_method == 'tc':
         sample_quintet_taxa = triplet_cover_sample(taxon_set)
@@ -45,8 +46,14 @@ def main(args):
             cost = extract_quintets(r, gene_trees, q_taxa, unrooted_quintets_base, rooted_quintets_base, tns, rooted_quintet_indices)
             r_score[i] += cost
     min_idx = np.argmin(r_score)
+    if args.confidencescore:
+        confidence_scores = (np.max(r_score) - r_score)/np.sum(np.max(r_score) - r_score)
+        with open(output_path+".confidence", 'w') as fp:
+            fp.write(np.array2string(confidence_scores, separator=', ') + "\n")
+        with open(output_path+".alltrees", 'w') as fp:
+            for t in rooted_candidates:
+                fp.write(str(t) + '\n')
     rooted_candidates[min_idx].write_to_path(dest=output_path, schema='newick')
-    return
 
 
 def triplet_cover_sample(taxon_set):
@@ -160,8 +167,6 @@ def get_all_rooted_trees(unrooted_tree):
             if dendropy.calculate.treecompare.symmetric_difference(rooted_candidates[i1], rooted_candidates[i2]) == 0:
                 rooted_candidates.pop(i2)
                 break
-    for t in rooted_candidates:
-        print(t)
     return rooted_candidates
 
 
@@ -170,7 +175,7 @@ def invariant_metric(a, b):
 
 
 def inequality_metric(a, b):
-    return (a-b) * (a > b)
+    return (a - b) * (a > b)
 
 
 def cost(u, indices, type):
@@ -187,7 +192,7 @@ def cost(u, indices, type):
     elif type == 'p':
         equivalence_classes = [[0], [1, 2], [3, 12], [7, 10], [4, 5, 6, 8, 9, 11, 13, 14]]
         inequality_classes = [[0, 1], [0, 2], [0, 3], [1, 4], [2, 4], [3, 4]]
-    for c in equivalence_classes:
+    for c in equivalence_classes: #distance inside clusters
         inclass_distance = 0
         for i in range(len(c)):
             for j in range(len(c)):
@@ -199,7 +204,7 @@ def cost(u, indices, type):
         for i in equivalence_classes[ineq[0]]:
             for j in equivalence_classes[ineq[1]]:
                 outclass_distance += inequality_metric(u[indices[j]], u[indices[i]])
-        inequality_score += outclass_distance/(len(equivalence_classes[ineq[0]]))#*len(equivalence_classes[ineq[1]]))
+        inequality_score += outclass_distance/(len(equivalence_classes[ineq[0]]))
     return invariant_score + inequality_score
 
 def parse_args():
@@ -217,8 +222,12 @@ def parse_args():
     parser.add_argument("-sm", "--samplingmethod", type=str, help="quintet sampling method (TC for triplet cover, LE for linear encoding)",
                         required=False, default='d')
 
+    parser.add_argument("-cfs", "--confidencescore",  action='store_true', help="output confidence scores for each possible rooted tree")
+
     parser.add_argument("-c", "--cost", type=str, help="cost function (MC for minimal constraints)",
                         required=False, default='d')
+
+    parser.add_argument("-rs", "--seed", type=int, help="random seed", required=False, default=1234)
 
     return parser.parse_args()
 
