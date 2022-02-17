@@ -39,6 +39,8 @@ $ python3 quintet_rooting.py -t <species-topology.tre> -g <input-genes.tre> -o <
  -h,  --help               show this help message and exit
  -sm, --samplingmode       TC for triplet cover, LE for linear encoding
  -c,  --cost               MC for minimal constraints
+ -cfs,--confidencescore    output confidence scores for each possible rooted tree
+ -rs,  --seed              random seed
 ```
 **Example**
 The `example` directory contains two example sets, one containing a 40-taxon avian species tree with 1000 genes and the other containing a 10-taxon mammalian species tree with 200 genes. The commands below show different modes of running Quintet Rooting on these data:
