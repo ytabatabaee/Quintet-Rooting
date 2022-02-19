@@ -1,6 +1,6 @@
 # Quintet Rooting
 
-Quintet Rooting is a method for rooting species trees from multi-locus datasets that uses phylogenetic invariants and inequalities under the multi-species coalescent (MSC) model to identify the position of the root in an unrooted tree. Quintet Rooting is statistically consistent under the MSC and is especially useful for multi-locus datasets with gene tree discordance due to incomplete lineage sorting (ILS). Quintet Rooting scores different rootings of a given unrooted species tree according to the distribution of unrooted quintets (i.e. 5-leaf trees) induced by a given set of gene trees, and returns the rooting with the minimum overall cost across all or a subset of quintets.
+Quintet Rooting is a method for rooting species trees from multi-locus datasets that uses phylogenetic invariants and inequalities under the multi-species coalescent (MSC) model to identify the position of the root in an unrooted tree. Quintet Rooting is statistically consistent under the MSC and is especially useful for multi-locus datasets with gene tree discordance due to incomplete lineage sorting (ILS). Quintet Rooting scores different rootings of a given unrooted species tree according to the distribution of unrooted quintets (i.e. 5-leaf trees) induced by a given set of gene trees, and returns the best rooting as well as a ranking over all rooted trees in the search space with a confidence score assigned to each.
 
 ## Contents
 - [Dependencies](#dependencies)
@@ -23,7 +23,7 @@ Quintet Rooting must be run in a directory containing the `rooted_quintet_indice
 ### Rooting an unrooted species tree
 **Input:** A file containing a species tree topology and a file containing a set of gene trees, both in newick format
 
-**Output:** A file containing the rooted species tree in newick format
+**Output:** A file containing the rooted species tree in newick format, and when run with `-cfs`, a file containing a ranking over all rooted trees in the search space sorted according to their confidence scores.
 ```
 $ python3 quintet_rooting.py -t <species-topology.tre> -g <input-genes.tre> -o <output-tree.tre>
 ```

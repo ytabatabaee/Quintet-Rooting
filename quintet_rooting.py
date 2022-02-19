@@ -46,15 +46,16 @@ def main(args):
             cost = extract_quintets(r, gene_trees, q_taxa, unrooted_quintets_base, rooted_quintets_base, tns, rooted_quintet_indices)
             r_score[i] += cost
     min_idx = np.argmin(r_score)
-    if args.confidencescore:
-        confidence_scores = (np.max(r_score) - r_score)/np.sum(np.max(r_score) - r_score)
-        with open(output_path+".confidence", 'w') as fp:
-            fp.write(np.array2string(confidence_scores, separator=', ') + "\n")
-        with open(output_path+".alltrees", 'w') as fp:
-            for t in rooted_candidates:
-                fp.write(str(t) + '\n')
     rooted_candidates[min_idx].write_to_path(dest=output_path, schema='newick')
 
+    if args.confidencescore:
+        confidence_scores = (np.max(r_score) - r_score)/np.sum(np.max(r_score) - r_score)
+        tree_ranking_indices = np.argsort(r_score)
+        with open(output_path+".rank.cfn", 'w') as fp:
+            for i in tree_ranking_indices:
+                fp.write(str(rooted_candidates[i]) + ';\n')
+                fp.write(str(confidence_scores[i]) + '\n')
+    
 
 def triplet_cover_sample(taxon_set):
     sample_quintet_taxa = []
