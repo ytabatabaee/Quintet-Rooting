@@ -38,6 +38,8 @@ def main(args):
         sample_quintet_taxa = triplet_cover_sample(taxon_set)
     elif sampling_method == 'le':
         sample_quintet_taxa = linear_quintet_encoding_sample(species_tree_toplogy, taxon_set)
+    elif sampling_method == 'rl':
+        sample_quintet_taxa = random_linear_sampling(taxon_set)
 
     for i in range(len(rooted_candidates)):
         r = rooted_candidates[i]
@@ -55,7 +57,11 @@ def main(args):
             for i in tree_ranking_indices:
                 fp.write(str(rooted_candidates[i]) + ';\n')
                 fp.write(str(confidence_scores[i]) + '\n')
-    
+
+def random_linear_sampling(taxon_set):
+    n = len(taxon_set)
+    return random.sample(list(itertools.combinations(taxon_set, 5)), 2*n-3)
+
 
 def triplet_cover_sample(taxon_set):
     sample_quintet_taxa = []
