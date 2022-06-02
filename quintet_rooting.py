@@ -12,10 +12,13 @@ def main(args):
     species_tree_path = args.speciestree
     gene_tree_path = args.genetrees
     output_path = args.outputtree
-    sampling_method = args.samplingmethod
+    sampling_method = args.samplingmethod.lower()
     random.seed(args.seed)
+    cost_func = args.cost.lower()
 
-    # reading gene tree and species tree topology files
+    start = time.time()
+
+    # reading gene tree and unrooted species tree topology files
     tns = dendropy.TaxonNamespace()
     tns_base = dendropy.TaxonNamespace()
     unrooted_species_tree_topology = dendropy.Tree.get(path=species_tree_path, schema='newick',
@@ -44,8 +47,11 @@ def main(args):
     elif sampling_method == 'rl':
         sample_quintet_taxa = random_linear_sampling(taxon_set)
 
-
+    print('Loading time:', time.time() - start)
     start = time.time()
+
+    print("Size of search space:", len(rooted_candidates))
+    print("Size of sampled quintets set:", len(sample_quintet_taxa))
 
     # preprocessing
     quintet_scores = np.zeros((len(sample_quintet_taxa), 7))
@@ -59,11 +65,10 @@ def main(args):
         subtree_u = unrooted_species_tree_topology.extract_tree_with_taxa_labels(labels=q_taxa, suppress_unifurcations=True)
         quintet_tree_dist = gene_tree_distribution(gene_trees, q_taxa, quintets_u)
         quintet_unrooted_indices[j] = get_quintet_unrooted_index(subtree_u, q_taxa, quintets_u)
-        quintet_scores[j] = compute_cost_rooted_quintets(quintet_tree_dist, quintet_unrooted_indices[j], rooted_quintet_indices)
+        quintet_scores[j] = compute_cost_rooted_quintets(quintet_tree_dist, quintet_unrooted_indices[j], rooted_quintet_indices, cost_func)
         quintets_r_all.append(quintets_r)
 
-    #print('preprocessing time', time.time() - start)
-
+    print('Preprocessing time:', time.time() - start)
     start = time.time()
 
     # computing scores
@@ -77,9 +82,10 @@ def main(args):
 
     min_idx = np.argmin(r_score)
     rooted_candidates[min_idx].write_to_path(dest=output_path, schema='newick')
-    #print(r_score)
 
-    #print('scoring time', time.time() - start)
+    print('Scoring time:', time.time() - start)
+    print('Scores of rooted trees:\n', r_score)
+    print('Best rooting:', rooted_candidates[min_idx])
 
     if args.confidencescore:
         confidence_scores = (np.max(r_score) - r_score)/np.sum(np.max(r_score) - r_score)
@@ -152,6 +158,7 @@ def linear_quintet_encoding_sample(unrooted_tree, taxon_set):
             continue
     return sample_quintet_taxa
 
+
 # ADR Table 5
 u2r_mapping = np.array([[0, 1, 58, 59, 66, 75, 104],
                        [2, 3, 52, 53, 63, 78, 103],
@@ -171,14 +178,14 @@ u2r_mapping = np.array([[0, 1, 58, 59, 66, 75, 104],
 
 
 # score the 7 rooted variants of a quintet
-def compute_cost_rooted_quintets(u_distribution, u_idx, rooted_quintet_indices):
+def compute_cost_rooted_quintets(u_distribution, u_idx, rooted_quintet_indices, cost_func):
     rooted_tree_indices = u2r_mapping[u_idx]
     costs = np.zeros(7)
     for i in range(7):
         idx = rooted_tree_indices[i]
         unlabeled_topology = idx_2_unlabeled_topology(idx)
         indices = rooted_quintet_indices[idx]
-        costs[i] = cost(u_distribution, indices, unlabeled_topology)
+        costs[i] = cost(u_distribution, indices, unlabeled_topology, cost_func)
     return costs
 
 
@@ -257,7 +264,7 @@ def inequality_metric(a, b):
     return (a - b) * (a > b)
 
 
-def cost(u, indices, type):
+def cost(u, indices, type, cost_func):
     invariant_score = 0
     inequality_score = 0
     equivalence_classes = []
@@ -271,19 +278,27 @@ def cost(u, indices, type):
     elif type == 'p':
         equivalence_classes = [[0], [1, 2], [3, 12], [7, 10], [4, 5, 6, 8, 9, 11, 13, 14]]
         inequality_classes = [[0, 1], [0, 2], [0, 3], [1, 4], [2, 4], [3, 4]]
-    for c in equivalence_classes: #distance inside clusters
-        inclass_distance = 0
-        for i in range(len(c)):
-            for j in range(len(c)):
-                inclass_distance += invariant_metric(u[indices[c[i]]], u[indices[c[j]]])
-        invariant_score += inclass_distance/(len(c))
-
-    for ineq in inequality_classes: #distance between clusters
-        outclass_distance = 0
+    #similarity inside equiv classes
+    if cost_func == 'inq':
+        invariant_score = 0
+    else:
+        for c in equivalence_classes:
+            intraclass_sim = 0
+            for i in range(len(c)):
+                for j in range(len(c)):
+                    intraclass_sim += invariant_metric(u[indices[c[i]]], u[indices[c[j]]])
+            invariant_score += intraclass_sim/(len(c))
+    #distance between equiv classes
+    for ineq in inequality_classes:
+        interclass_distance = 0
         for i in equivalence_classes[ineq[0]]:
             for j in equivalence_classes[ineq[1]]:
-                outclass_distance += inequality_metric(u[indices[j]], u[indices[i]])
-        inequality_score += outclass_distance/(len(equivalence_classes[ineq[0]]))
+                interclass_distance += inequality_metric(u[indices[j]], u[indices[i]])
+        if cost_func == 'inq':
+            inequality_score += interclass_distance
+        else:
+            inequality_score += interclass_distance/(len(equivalence_classes[ineq[0]]))
+
     return invariant_score + inequality_score
 
 
@@ -302,9 +317,9 @@ def parse_args():
     parser.add_argument("-sm", "--samplingmethod", type=str, help="quintet sampling method (TC for triplet cover, LE for linear encoding)",
                         required=False, default='d')
 
-    parser.add_argument("-cfs", "--confidencescore",  action='store_true', help="output confidence scores for each possible rooted tree")
+    parser.add_argument("-cfs", "--confidencescore",  action='store_true', help="output confidence scores for each possible rooted tree and a ranking")
 
-    parser.add_argument("-c", "--cost", type=str, help="cost function (MC for minimal constraints)",
+    parser.add_argument("-c", "--cost", type=str, help="cost function (INQ for inequalities only)",
                         required=False, default='d')
 
     parser.add_argument("-rs", "--seed", type=int, help="random seed", required=False, default=1234)

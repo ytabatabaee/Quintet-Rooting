@@ -38,7 +38,7 @@ $ python3 quintet_rooting.py -t <species-topology.tre> -g <input-genes.tre> -o <
 ```
  -h,  --help               show this help message and exit
  -sm, --samplingmode       TC for triplet cover, LE for linear encoding
- -c,  --cost               MC for minimal constraints
+ -c,  --cost               cost function (INQ for inequalities only)
  -cfs,--confidencescore    output confidence scores for each possible rooted tree
  -rs,  --seed              random seed
 ```
@@ -48,10 +48,10 @@ The `example` directory contains one example set, containing a 10-taxon avian sp
 $ python3 quintet_rooting.py -t ./example/avian-species-10.tre -g ./example/avian-genes-10.tre -o ./example/avian-rooted-10.tre -sm LE
 ```
 ```
-$ python3 quintet_rooting.py -t ./example/avian-species-10.tre -g ./example/avian-genes-10.tre -o ./example/avian-rooted-10.tre -sm TC -c MC
+$ python3 quintet_rooting.py -t ./example/avian-species-10.tre -g ./example/avian-genes-10.tre -o ./example/avian-rooted-10.tre -sm TC -c INQ
 ```
 ### Quintet Sampling Method
-Quintet Rooting can run with three different sampling methods. The default version runs in O(n<sup>5</sup>k), where n is the number of taxa and k is the number of gene trees, and exhaustively scores all quintets. The `TC` version scores a subset of quintets that guarantee to cover all triplets and runs in O(n<sup>3</sup>k). The `LE` version uses a linear mapping of edges in the unrooted topology to quintets and and runs in O(nk). The default version is generally more accurate, although we recommond using the `LE` version for datasets with more than 20 species, as the others will take longer to run. All three sampling methods have provided reasonably close accuracy under simulations.
+Quintet Rooting can run with three different sampling methods. The default version runs in O(n<sup>5</sup>k), where n is the number of taxa and k is the number of gene trees, and exhaustively scores all quintets. The `TC` version scores a subset of quintets that guarantee to cover all triplets and runs in O(n<sup>3</sup>k). The `LE` version uses a linear mapping of edges in the unrooted topology to quintets and and runs in O(nk). The default version is generally more accurate, although we recommend using the `LE` version for datasets with more than 20 species, as the others will take longer to run. All three sampling methods have provided reasonably close accuracy under simulations.
 
 ## Additional Files
-The basic topology of all rooted and unrooted 5-leaf trees are provided in the `./topologies` direcotory (taxa are simply shown with numbers 1-5). The `rooted_quintet_indices.npy` file is in standard binary format in Numpy (and therefore can be used with `numpy.load()` function) and contains the set of equivalence classes for the distribution of unrooted gene trees for each of the 105 5-taxon rooted species tree.
+The basic topology of all rooted and unrooted 5-leaf trees are provided in the `./topologies` directory (taxa are simply shown with numbers 1-5). The `rooted_quintet_indices.npy` file is in standard binary format in Numpy (and therefore can be used with `numpy.load()` function) and contains the set of equivalence classes for the distribution of unrooted gene trees for each of the 105 5-taxon rooted species tree.
