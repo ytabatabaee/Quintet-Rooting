@@ -1,4 +1,2 @@
-DendroPy
-mpmath
+DendroPy>=4
 numpy
-sympy

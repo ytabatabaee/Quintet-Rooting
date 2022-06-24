@@ -1,13 +1,12 @@
-import sys
-import os
 import argparse
+import time
 import dendropy
 import numpy as np
-import time
-import itertools
-import random
 
-
+from qr.adr_theory import *
+from qr.fitness_cost import cost
+from qr.quintet_sampling import *
+from qr.utils import *
 
 
 def main(args):
@@ -32,20 +31,31 @@ def main(args):
                                          taxon_namespace=tns, rooting="force-unrooted", suppress_edge_lengths=True)
     if len(tns) < 5:
         raise Exception("Species tree " + species_tree_path + " has less than 5 taxa!\n")
-    gene_trees = dendropy.TreeList.get(path=gene_tree_path, schema='newick', taxon_namespace=tns, rooting="force-unrooted")
+    gene_trees = dendropy.TreeList.get(path=gene_tree_path, schema='newick', taxon_namespace=tns,
+                                       rooting="force-unrooted", suppress_edge_lengths=True)
 
-    # reading topology files
+    # reading fixed quintet topology files
     tns_base = dendropy.TaxonNamespace()
-    unrooted_quintets_base = dendropy.TreeList.get(path=script_path+'/topologies/quintets.tre', taxon_namespace=tns_base, schema='newick')
+    unrooted_quintets_base = dendropy.TreeList.get(path=script_path + '/qr/topologies/quintets.tre',
+                                                   taxon_namespace=tns_base, schema='newick')
     rooted_quintets_base = dendropy.TreeList(taxon_namespace=tns_base)
-    rooted_quintets_base.read(path=script_path+'/topologies/caterpillar.tre', schema='newick', rooting="default-rooted")
-    rooted_quintets_base.read(path=script_path+'/topologies/pseudo_caterpillar.tre', schema='newick', rooting="default-rooted")
-    rooted_quintets_base.read(path=script_path+'/topologies/balanced.tre', schema='newick', rooting="default-rooted")
-    rooted_quintet_indices = np.load(script_path+'/rooted_quintet_indices.npy')
+    rooted_quintets_base.read(path=script_path + '/qr/topologies/caterpillar.tre', schema='newick',
+                              rooting="default-rooted")
+    rooted_quintets_base.read(path=script_path + '/qr/topologies/pseudo_caterpillar.tre', schema='newick',
+                              rooting="default-rooted")
+    rooted_quintets_base.read(path=script_path + '/qr/topologies/balanced.tre', schema='newick',
+                              rooting="default-rooted")
+    rooted_quintet_indices = np.load(script_path + '/qr/rooted_quintet_indices.npy')
+
+    print('Loading time: %.2f sec' % (time.time() - st_time))
+    ss_time = time.time()
 
     # search space of rooted trees
     rooted_candidates = get_all_rooted_trees(unrooted_species)
     r_score = np.zeros(len(rooted_candidates))
+
+    print('Creating search space time: %.2f sec' % (time.time() - ss_time))
+    sm_time = time.time()
 
     # set of sampled quintets
     taxon_set = [t.label for t in tns]
@@ -57,11 +67,12 @@ def main(args):
     elif sampling_method == 'le':
         sample_quintet_taxa = linear_quintet_encoding_sample(unrooted_species, taxon_set)
     elif sampling_method == 'rl':
-        sample_quintet_taxa = random_linear_sampling(taxon_set)
+        sample_quintet_taxa = random_linear_sample(taxon_set)
 
-    print('Loading time: %.2f sec' %(time.time() - st_time))
+    print('Quintet sampling time: %.2f sec' % (time.time() - sm_time))
     proc_time = time.time()
 
+    print("Number of taxa (n):", len(tns))
     print("Size of search space (|R|):", len(rooted_candidates))
     print("Size of sampled quintets set (|Q*|):", len(sample_quintet_taxa))
 
@@ -72,15 +83,20 @@ def main(args):
 
     for j in range(len(sample_quintet_taxa)):
         q_taxa = sample_quintet_taxa[j]
-        quintets_u = [dendropy.Tree.get(data=map_taxonnamespace(str(q), q_taxa)+';', schema='newick', rooting='force-unrooted', taxon_namespace=tns) for q in unrooted_quintets_base]
-        quintets_r = [dendropy.Tree.get(data=map_taxonnamespace(str(q), q_taxa)+';', schema='newick', rooting='force-rooted', taxon_namespace=tns) for q in rooted_quintets_base] # you don't need all of this
+        quintets_u = [
+            dendropy.Tree.get(data=map_taxon_namespace(str(q), q_taxa) + ';', schema='newick', rooting='force-unrooted',
+                              taxon_namespace=tns) for q in unrooted_quintets_base]
+        quintets_r = [
+            dendropy.Tree.get(data=map_taxon_namespace(str(q), q_taxa) + ';', schema='newick', rooting='force-rooted',
+                              taxon_namespace=tns) for q in rooted_quintets_base]
         subtree_u = unrooted_species.extract_tree_with_taxa_labels(labels=q_taxa, suppress_unifurcations=True)
         quintet_tree_dist = gene_tree_distribution(gene_trees, q_taxa, quintets_u)
-        quintet_unrooted_indices[j] = get_quintet_unrooted_index(subtree_u, q_taxa, quintets_u)
-        quintet_scores[j] = compute_cost_rooted_quintets(quintet_tree_dist, quintet_unrooted_indices[j], rooted_quintet_indices, cost_func)
+        quintet_unrooted_indices[j] = get_quintet_unrooted_index(subtree_u, quintets_u)
+        quintet_scores[j] = compute_cost_rooted_quintets(quintet_tree_dist, quintet_unrooted_indices[j],
+                                                         rooted_quintet_indices, cost_func)
         quintets_r_all.append(quintets_r)
 
-    print('Preprocessing time: %.2f sec' %(time.time() - proc_time))
+    print('Preprocessing time: %.2f sec' % (time.time() - proc_time))
     sc_time = time.time()
 
     # computing scores
@@ -89,110 +105,38 @@ def main(args):
         for j in range(len(sample_quintet_taxa)):
             q_taxa = sample_quintet_taxa[j]
             subtree_r = r.extract_tree_with_taxa_labels(labels=q_taxa, suppress_unifurcations=True)
-            r_idx = get_quintet_rooted_index(subtree_r, q_taxa, quintets_r_all[j], quintet_unrooted_indices[j])
+            r_idx = get_quintet_rooted_index(subtree_r, quintets_r_all[j], quintet_unrooted_indices[j])
             r_score[i] += quintet_scores[j][r_idx]
 
     min_idx = np.argmin(r_score)
     with open(output_path, 'w') as fp:
         fp.write(str(rooted_candidates[min_idx]) + ';\n')
 
-    print('Scoring time: %.2f sec' %(time.time() - sc_time))
+    print('Scoring time: %.2f sec' % (time.time() - sc_time))
     print('Scores of all rooted trees:\n', r_score)
     print('Best rooting:\n', rooted_candidates[min_idx])
 
     # computing confidence scores
     if args.confidencescore:
-        confidence_scores = (np.max(r_score) - r_score)/np.sum(np.max(r_score) - r_score)
+        confidence_scores = (np.max(r_score) - r_score) / np.sum(np.max(r_score) - r_score)
         tree_ranking_indices = np.argsort(r_score)
-        with open(output_path+".rank.cfn", 'w') as fp:
+        with open(output_path + ".rank.cfn", 'w') as fp:
             for i in tree_ranking_indices:
                 fp.write(str(rooted_candidates[i]) + ';\n')
                 fp.write(str(confidence_scores[i]) + '\n')
 
-    print('Total executation time: %.2f sec\n' %(time.time() - st_time))
-
-def linear_quintet_encoding_sample(unrooted_tree, taxon_set):
-    sample_quintet_taxa = []
-    tree = dendropy.Tree(unrooted_tree)
-    for edge in tree.preorder_edge_iter():
-        seed_node = tree.seed_node
-        try:
-            if edge.is_leaf():
-                quintet = []
-                tri_node = edge.tail_node
-                tree.reroot_at_node(tri_node, update_bipartitions=True)
-                tri_partition_taxa = []
-                for child in tree.seed_node.child_node_iter():
-                    partition = []
-                    for c in child.leaf_nodes():
-                        partition.append(c.taxon.label)
-                    tri_partition_taxa.append(partition)
-                if len(tri_partition_taxa) > 2:
-                    for partition in tri_partition_taxa:
-                        quintet.extend(random.sample(partition, 1))
-                    quintet.extend(random.sample([x for x in taxon_set if x not in quintet], 5 - len(quintet)))
-                    sample_quintet_taxa.append(tuple(quintet))
-                tree.reroot_at_node(seed_node, update_bipartitions=True)
-
-            elif edge.is_internal():
-                quintet = []
-                adj_edges  = edge.get_adjacent_edges()
-                tree.reroot_at_edge(edge, update_bipartitions=True)
-                four_partition_taxa = []
-                for e in adj_edges:
-                    partition = []
-                    for c in e.head_node.leaf_nodes():
-                        partition.append(c.taxon.label)
-                    four_partition_taxa.append(partition)
-                for i in range(len(four_partition_taxa)):
-                    for j in range(i+1, len(four_partition_taxa)):
-                        if set(four_partition_taxa[i]).issubset(set(four_partition_taxa[j])):
-                            four_partition_taxa[j] = list(set(four_partition_taxa[j]) - set(four_partition_taxa[i]))
-                four_partition_taxa = [p for p in four_partition_taxa if p != []]
-                if len(four_partition_taxa) > 2:
-                    for partition in four_partition_taxa:
-                        quintet.extend(random.sample(partition, 1))
-                    quintet.extend(random.sample([x for x in taxon_set if x not in quintet], 5 - len(quintet)))
-                    sample_quintet_taxa.append(tuple(quintet))
-                tree.reroot_at_node(seed_node, update_bipartitions=True)
-        except Exception as ex:
-            continue
-    return sample_quintet_taxa
-
-def random_linear_sampling(taxon_set):
-    n = len(taxon_set)
-    return random.sample(list(itertools.combinations(taxon_set, 5)), 2*n-3)
+    print('Total execution time: %.2f sec\n' % (time.time() - st_time))
 
 
-def triplet_cover_sample(taxon_set):
-    sample_quintet_taxa = []
-    all_triplet_taxa = list(itertools.combinations(taxon_set, 3))
-    for trip in all_triplet_taxa:
-        trip_prime = random.sample([x for x in taxon_set if x not in trip], 2)
-        sample_quintet_taxa.append(tuple(list(trip) + list(trip_prime)))
-    return sample_quintet_taxa
-
-
-# ADR Table 5
-u2r_mapping = np.array([[0, 1, 58, 59, 66, 75, 104],
-                       [2, 3, 52, 53, 63, 78, 103],
-                       [4, 5, 46, 47, 60, 87, 102],
-                       [6, 7, 56, 57, 69, 76, 101],
-                       [8, 9, 40, 41, 64, 81, 100],
-                       [10, 11, 34, 35, 61, 90, 99],
-                       [12, 13, 50, 51, 70, 79, 95],
-                       [14, 15, 38, 39, 67, 82, 94],
-                       [16, 17, 28, 29, 62, 93, 96],
-                       [18, 19, 44, 45, 71, 86, 88],
-                       [20, 21, 32, 33, 68, 85, 91],
-                       [22, 23, 26, 27, 65, 84, 97],
-                       [24, 25, 54, 55, 72, 77, 98],
-                       [30, 31, 48, 49, 73, 80, 92],
-                       [36, 37, 42, 43, 74, 83, 89]])
-
-
-# score the 7 rooted variants of a quintet
 def compute_cost_rooted_quintets(u_distribution, u_idx, rooted_quintet_indices, cost_func):
+    """
+    Scores the 7 possible rootings of an unrooted quintet
+    :param np.ndarray u_distribution: unrooted quintet tree probability distribution
+    :param int u_idx: index of unrooted binary tree
+    :param np.ndarray rooted_quintet_indices: indices of partial orders for all rooted quintet trees
+    :param str cost_func: type of the fitness function
+    :rtype: np.ndarray
+    """
     rooted_tree_indices = u2r_mapping[u_idx]
     costs = np.zeros(7)
     for i in range(7):
@@ -203,56 +147,12 @@ def compute_cost_rooted_quintets(u_distribution, u_idx, rooted_quintet_indices, 
     return costs
 
 
-def idx_2_unlabeled_topology(idx):
-    if idx < 60:
-        return 'c'
-    elif idx >= 60 and idx < 75:
-        return 'p'
-    elif idx >= 75 and idx < 105:
-        return 'b'
-    return None
-
-
-def gene_tree_distribution(gene_trees, q_taxa, quintets_u):
-    u_count = np.zeros(len(quintets_u))
-    for g in gene_trees:
-        g_subtree = g.extract_tree_with_taxa_labels(labels=q_taxa, suppress_unifurcations=True)
-        for i in range(len(quintets_u)):
-            if dendropy.calculate.treecompare.symmetric_difference(quintets_u[i], g_subtree) == 0:
-                u_count[i] += 1
-                break
-    u_distribution = u_count / len(gene_trees)
-    return u_distribution
-
-
-def get_quintet_unrooted_index(subtree_u, q_taxa, quintets_u):
-    idx_u = -1
-    for i in range(len(quintets_u)):
-        if dendropy.calculate.treecompare.symmetric_difference(quintets_u[i], subtree_u) == 0:
-            idx_u = i
-            break
-    return idx_u
-
-
-def get_quintet_rooted_index(subtree_r, q_taxa, quintets_r, u_idx):
-    idx_r = -1
-    for i in range(7):
-        idx = u2r_mapping[u_idx][i]
-        if dendropy.calculate.treecompare.symmetric_difference(quintets_r[idx], subtree_r) == 0:
-            idx_r = i
-            break
-    return idx_r
-
-
-def map_taxonnamespace(s, map):
-    a = '' + s
-    for i in range(len(map)):
-        a = a.replace(str(i+1), map[i])
-    return a
-
-
 def get_all_rooted_trees(unrooted_tree):
-    # generate all the 2n-3 possible rooted trees
+    """
+    Generates all the possible rooted trees with a given unrooted topology
+    :param dendropy.Tree unrooted_tree: an unrooted tree topology
+    :rtype: list
+    """
     rooted_candidates = []
     tree = dendropy.Tree(unrooted_tree)
     for edge in tree.preorder_edge_iter():
@@ -262,58 +162,11 @@ def get_all_rooted_trees(unrooted_tree):
         except:
             continue
     # removing duplicates
-    for i1 in range(len(rooted_candidates)):
-        for i2 in range(i1+1, len(rooted_candidates)):
-            if dendropy.calculate.treecompare.symmetric_difference(rooted_candidates[i1], rooted_candidates[i2]) == 0:
-                rooted_candidates.pop(i2)
-                break
+    for i in range(1, len(rooted_candidates)):
+        if dendropy.calculate.treecompare.symmetric_difference(rooted_candidates[0], rooted_candidates[i]) == 0:
+            rooted_candidates.pop(i)
+            break
     return rooted_candidates
-
-
-def invariant_metric(a, b):
-    return np.abs(a - b)
-
-
-def inequality_metric(a, b):
-    return (a - b) * (a > b)
-
-
-def cost(u, indices, type, cost_func):
-    invariant_score = 0
-    inequality_score = 0
-    equivalence_classes = []
-    inequality_classes = []
-    if type == 'c':
-        equivalence_classes = [[0], [1], [2], [3, 12], [4, 11], [5, 8], [6, 7, 9, 10, 13, 14]]
-        inequality_classes = [[0, 1], [0, 3], [1, 4], [3, 4], [4, 6], [2, 1], [2, 5], [5, 4]] # [a, b] -> a > b, a and b are cluster indices
-    elif type == 'b':
-        equivalence_classes = [[0], [1, 2], [3, 12], [4, 5, 8, 11], [6, 7, 9, 10, 13, 14]]
-        inequality_classes = [[0, 1], [0, 2], [1, 3], [2, 3], [3, 4]]
-    elif type == 'p':
-        equivalence_classes = [[0], [1, 2], [3, 12], [7, 10], [4, 5, 6, 8, 9, 11, 13, 14]]
-        inequality_classes = [[0, 1], [0, 2], [0, 3], [1, 4], [2, 4], [3, 4]]
-    #similarity inside equiv classes
-    if cost_func == 'inq':
-        invariant_score = 0
-    else:
-        for c in equivalence_classes:
-            intraclass_sim = 0
-            for i in range(len(c)):
-                for j in range(len(c)):
-                    intraclass_sim += invariant_metric(u[indices[c[i]]], u[indices[c[j]]])
-            invariant_score += intraclass_sim/(len(c))
-    #distance between equiv classes
-    for ineq in inequality_classes:
-        interclass_distance = 0
-        for i in equivalence_classes[ineq[0]]:
-            for j in equivalence_classes[ineq[1]]:
-                interclass_distance += inequality_metric(u[indices[j]], u[indices[i]])
-        if cost_func == 'inq':
-            inequality_score += interclass_distance
-        else:
-            inequality_score += interclass_distance/(len(equivalence_classes[ineq[0]]))
-
-    return invariant_score + inequality_score
 
 
 def parse_args():
@@ -332,10 +185,10 @@ def parse_args():
                         required=True, default=None)
 
     parser.add_argument("-sm", "--samplingmethod", type=str,
-                        help="quintet sampling method (TC for triplet cover, LE for linear encoding)",
-                        required=False, default='d')
+                        help="quintet sampling method (TC for triplet cover, LE for linear encoding, RL for random "
+                             "linear)", required=False, default='d')
 
-    parser.add_argument("-cfs", "--confidencescore",  action='store_true',
+    parser.add_argument("-cfs", "--confidencescore", action='store_true',
                         help="output confidence scores for each possible rooted tree as well as a ranking")
 
     parser.add_argument("-c", "--cost", type=str,
@@ -345,9 +198,9 @@ def parse_args():
     parser.add_argument("-rs", "--seed", type=int,
                         help="random seed", required=False, default=1234)
 
-
     args = parser.parse_args()
     return args
+
 
 if __name__ == "__main__":
     main(parse_args())
