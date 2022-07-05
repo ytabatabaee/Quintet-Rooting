@@ -14,7 +14,7 @@ If you have Python 3 and pip, you can use `pip install -r requirements.txt` to i
 Quintet Rooting must be run in a directory containing files in the `./qr` directory. We recommend that you clone the repository and run `quintet_rooting.py` in the base directory.
 
 ### Rooting an unrooted species tree
-**Input:** A file containing an unrooted species tree topology and a file containing a set of unrooted gene trees, both in newick format (may or may not include branch lengths).
+**Input:** A file containing an unrooted species tree (with at least 5 taxa) and a file containing a set of unrooted gene trees, both in newick format (may or may not include branch lengths).
 
 **Output:** A file containing the rooted species tree in newick format, and when run with `-cfs`, an additional file containing a ranking over all rooted trees in the search space sorted according to their confidence scores.
 ```

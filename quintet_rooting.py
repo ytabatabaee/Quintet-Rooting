@@ -21,7 +21,7 @@ def main(args):
     random.seed(args.seed)
     cost_func = args.cost.lower()
     header = """*********************************
-*     Quintet Rooting v1.1      *
+*     Quintet Rooting v1.1.1    *
 *********************************"""
     print(header)
 
@@ -162,15 +162,16 @@ def get_all_rooted_trees(unrooted_tree):
         except:
             continue
     # removing duplicates
+    rooted_candidates[0].resolve_polytomies(update_bipartitions=True)
     for i in range(1, len(rooted_candidates)):
         if dendropy.calculate.treecompare.symmetric_difference(rooted_candidates[0], rooted_candidates[i]) == 0:
-            rooted_candidates.pop(i)
+            rooted_candidates.pop(0)
             break
     return rooted_candidates
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='== Quintet Rooting v1.1 ==')
+    parser = argparse.ArgumentParser(description='== Quintet Rooting v1.1.1 ==')
 
     parser.add_argument("-t", "--speciestree", type=str,
                         help="input unrooted species tree in newick format",
