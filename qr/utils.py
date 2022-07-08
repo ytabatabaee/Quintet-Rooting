@@ -153,6 +153,9 @@ def gene_tree_distribution(gene_trees, q_taxa, quintets_u):
     """
     u_count = np.zeros(len(quintets_u))
     for g in gene_trees:
+        g_taxa = set([x.taxon.label for x in g.leaf_nodes()])
+        if not set(q_taxa).issubset(g_taxa):
+            continue
         g_subtree = g.extract_tree_with_taxa_labels(labels=q_taxa, suppress_unifurcations=True)
         for i in range(len(quintets_u)):
             if dendropy.calculate.treecompare.symmetric_difference(quintets_u[i], g_subtree) == 0:
