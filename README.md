@@ -32,7 +32,9 @@ $ python3 quintet_rooting.py -t <species-topology.tre> -g <input-genes.tre> -o <
  -h,  --help               show this help message and exit
  -sm, --samplingmode       TC for triplet cover, LE for linear encoding
  -c,  --cost               cost function (INQ for inequalities only)
- -cfs,--confidencescore    output confidence scores for each possible rooted tree
+ -cfs, --confidencescore   output confidence scores for each possible rooted tree
+ -mult, --multiplicity     multiplicity (number of quintets mapped to each edge) in QR-LE
+ -norm, --normalized       using normalization for unresolved gene trees or missing taxa
  -rs,  --seed              random seed
 ```
 **Example**

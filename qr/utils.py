@@ -141,7 +141,7 @@ def get_quintet_rooted_index(subtree_r, quintets_r, u_idx):
     return idx_r
 
 
-def gene_tree_distribution(gene_trees, q_taxa, quintets_u):
+def gene_tree_distribution(gene_trees, q_taxa, quintets_u, normalized):
     """
     Given a set of gene trees, labels of 5 taxa 'q_taxa' and the set of unrooted
     quintet trees, estimates the quintet distribution on the induced gene subtrees
@@ -149,6 +149,7 @@ def gene_tree_distribution(gene_trees, q_taxa, quintets_u):
     :param list gene_trees: a set of unrooted gene trees
     :param tuple q_taxa: labels of 5 taxa
     :param list quintets_u: list of 15 unrooted quintet trees on q_taxa
+    :param normalized: normalization by the number of gene trees having a quintet rather than all gene trees
     :rtype: np.ndarray
     """
     u_count = np.zeros(len(quintets_u))
@@ -161,5 +162,8 @@ def gene_tree_distribution(gene_trees, q_taxa, quintets_u):
             if dendropy.calculate.treecompare.symmetric_difference(quintets_u[i], g_subtree) == 0:
                 u_count[i] += 1
                 break
-    u_distribution = u_count / len(gene_trees)
+    if normalized and sum(u_count) != 0:
+        u_distribution = u_count / sum(u_count)
+    else:
+        u_distribution = u_count / len(gene_trees)
     return u_distribution
