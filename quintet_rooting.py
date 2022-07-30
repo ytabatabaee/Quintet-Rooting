@@ -3,6 +3,7 @@ import time
 import dendropy
 import numpy as np
 import sys
+from table_five import TreeSet
 
 from qr.adr_theory import *
 from qr.fitness_cost import cost
@@ -24,7 +25,7 @@ def main(args):
     mult_le = args.multiplicity
 
     header = """*********************************
-*     Quintet Rooting v1.2.0    *
+*     Quintet Rooting v1.2.1    *
 *********************************"""
     sys.stdout.write(header + '\n')
 
@@ -34,8 +35,7 @@ def main(args):
                                          taxon_namespace=tns, rooting="force-unrooted", suppress_edge_lengths=True)
     if len(tns) < 5:
         raise Exception("Species tree " + species_tree_path + " has less than 5 taxa!\n")
-    gene_trees = dendropy.TreeList.get(path=gene_tree_path, schema='newick', taxon_namespace=tns,
-                                       rooting="force-unrooted", suppress_edge_lengths=True)
+    gene_trees = TreeSet(gene_tree_path)
 
     # reading fixed quintet topology files
     tns_base = dendropy.TaxonNamespace()
@@ -93,7 +93,9 @@ def main(args):
             dendropy.Tree.get(data=map_taxon_namespace(str(q), q_taxa) + ';', schema='newick', rooting='force-rooted',
                               taxon_namespace=tns) for q in rooted_quintets_base]
         subtree_u = unrooted_species.extract_tree_with_taxa_labels(labels=q_taxa, suppress_unifurcations=True)
-        quintet_tree_dist = gene_tree_distribution(gene_trees, q_taxa, quintets_u, args.normalized)
+        quintet_counts = np.asarray(gene_trees.tally_single_quintet(q_taxa))
+        quintet_normalizer = sum(quintet_counts) if args.normalized else len(gene_trees)
+        quintet_tree_dist = quintet_counts / quintet_normalizer
         quintet_unrooted_indices[j] = get_quintet_unrooted_index(subtree_u, quintets_u)
         quintet_scores[j] = compute_cost_rooted_quintets(quintet_tree_dist, quintet_unrooted_indices[j],
                                                          rooted_quintet_indices, cost_func)
