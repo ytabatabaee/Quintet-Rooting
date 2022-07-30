@@ -3,10 +3,11 @@
 Quintet Rooting (QR) is a method for rooting species trees from multi-locus datasets that uses phylogenetic invariants and inequalities established by [Allman, Degnan, and Rhodes (J Math Biol, 2011)](https://link.springer.com/article/10.1007/s00285-010-0355-7) under the multi-species coalescent (MSC) model to identify the position of the root in an unrooted species tree. Quintet Rooting is polynomial-time and is especially useful for multi-locus datasets with gene tree discordance due to incomplete lineage sorting (ILS). QR scores different rootings of a given unrooted species tree according to the distribution of unrooted quintets (i.e. 5-leaf trees) induced by a given set of gene trees, and returns the best rooting as well as a ranking over all rooted trees in the search space with a confidence score assigned to each.
 
 ## Dependencies
-Quintet Rooting is implemented in Python 3. It was developed and tested in Python version 3.6.8 and has the following dependencies:
+Quintet Rooting is implemented in Python 3. It was developed and tested in Python version 3.7.0 and has the following dependencies:
 - [Python 3.x](https://www.python.org)
 - [Dendropy 4.x](https://dendropy.org/index.html)
 - [Numpy](https://numpy.org)
+- [table-five](https://github.com/RuneBlaze/fifteen)
 
 If you have Python 3 and pip, you can use `pip install -r requirements.txt` to install all dependencies.
 
