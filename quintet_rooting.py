@@ -9,6 +9,7 @@ from qr.adr_theory import *
 from qr.fitness_cost import cost
 from qr.quintet_sampling import *
 from qr.utils import *
+from qr.version import __version__
 
 
 def main(args):
@@ -25,7 +26,7 @@ def main(args):
     mult_le = args.multiplicity
 
     header = """*********************************
-*     Quintet Rooting v1.2.1    *
+*     Quintet Rooting """ + __version__ + """    *
 *********************************"""
     sys.stdout.write(header + '\n')
 
@@ -76,6 +77,7 @@ def main(args):
     proc_time = time.time()
 
     sys.stdout.write("Number of taxa (n): %d\n" % len(tns))
+    sys.stdout.write("Number of gene trees (k): %d\n" % len(gene_trees))
     sys.stdout.write("Size of search space (|R|): %d\n" % len(rooted_candidates))
     sys.stdout.write("Size of sampled quintets set (|Q*|): %d\n" % len(sample_quintet_taxa))
 
@@ -105,6 +107,7 @@ def main(args):
     sc_time = time.time()
 
     # computing scores
+    min_score = sys.maxsize
     for i in range(len(rooted_candidates)):
         r = rooted_candidates[i]
         for j in range(len(sample_quintet_taxa)):
@@ -112,17 +115,21 @@ def main(args):
             subtree_r = r.extract_tree_with_taxa_labels(labels=q_taxa, suppress_unifurcations=True)
             r_idx = get_quintet_rooted_index(subtree_r, quintets_r_all[j], quintet_unrooted_indices[j])
             r_score[i] += quintet_scores[j][r_idx]
+            if not args.confidencescore and r_score[i] > min_score:
+                break
+        if r_score[i] < min_score:
+            min_score = r_score[i]
 
     min_idx = np.argmin(r_score)
     with open(output_path, 'w') as fp:
         fp.write(str(rooted_candidates[min_idx]) + ';\n')
 
     sys.stdout.write('Scoring time: %.2f sec\n' % (time.time() - sc_time))
-    sys.stdout.write('Scores of all rooted trees:\n %s \n' % str(r_score))
     sys.stdout.write('Best rooting: \n%s \n' % str(rooted_candidates[min_idx]))
 
     # computing confidence scores
     if args.confidencescore:
+        sys.stdout.write('Scores of all rooted trees:\n %s \n' % str(r_score))
         confidence_scores = (np.max(r_score) - r_score) / np.sum(np.max(r_score) - r_score)
         tree_ranking_indices = np.argsort(r_score)
         with open(output_path + ".rank.cfn", 'w') as fp:
@@ -176,7 +183,7 @@ def get_all_rooted_trees(unrooted_tree):
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='== Quintet Rooting v1.2.0 ==')
+    parser = argparse.ArgumentParser(description=str('== Quintet Rooting ' + __version__ + ' =='))
 
     parser.add_argument("-t", "--speciestree", type=str,
                         help="input unrooted species tree in newick format",
