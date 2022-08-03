@@ -97,7 +97,9 @@ def main(args):
         subtree_u = unrooted_species.extract_tree_with_taxa_labels(labels=q_taxa, suppress_unifurcations=True)
         quintet_counts = np.asarray(gene_trees.tally_single_quintet(q_taxa))
         quintet_normalizer = sum(quintet_counts) if args.normalized else len(gene_trees)
-        quintet_tree_dist = quintet_counts / quintet_normalizer
+        quintet_tree_dist = quintet_counts
+        if quintet_normalizer != 0:
+            quintet_tree_dist = quintet_tree_dist / quintet_normalizer
         quintet_unrooted_indices[j] = get_quintet_unrooted_index(subtree_u, quintets_u)
         quintet_scores[j] = compute_cost_rooted_quintets(quintet_tree_dist, quintet_unrooted_indices[j],
                                                          rooted_quintet_indices, cost_func)
