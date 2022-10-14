@@ -32,11 +32,8 @@ def main(args):
 *********************************"""
     sys.stdout.write(header + '\n')
 
-    # reading gene tree and unrooted species tree topology files
+
     tns = dendropy.TaxonNamespace()
-    #true_s_tree = dendropy.Tree.get(path=species_tree_path, schema='newick',
-    #                                taxon_namespace=tns, rooting="force-rooted")
-    #print(true_s_tree)
     unrooted_species = dendropy.Tree.get(path=species_tree_path, schema='newick',
                                          taxon_namespace=tns, rooting="force-unrooted", suppress_edge_lengths=True)
     if len(tns) < 5:
@@ -69,7 +66,7 @@ def main(args):
     # set of sampled quintets
     taxon_set = [t.label for t in tns]
     sample_quintet_taxa = []
-    if len(taxon_set) == 5 or sampling_method == 'd':
+    if len(taxon_set) == 5 or sampling_method == 'exh':
         sample_quintet_taxa = list(itertools.combinations(taxon_set, 5))
     elif sampling_method == 'tc':
         sample_quintet_taxa = triplet_cover_sample(taxon_set)
@@ -91,8 +88,6 @@ def main(args):
     quintet_unrooted_indices = np.zeros(len(sample_quintet_taxa), dtype=int)
     quintets_r_all = []
 
-    #est_shape = None
-    #true_shape = None
     for j in range(len(sample_quintet_taxa)):
         q_taxa = sample_quintet_taxa[j]
         quintets_u = [
@@ -102,21 +97,12 @@ def main(args):
             dendropy.Tree.get(data=map_taxon_namespace(str(q), q_taxa) + ';', schema='newick', rooting='force-rooted',
                               taxon_namespace=tns) for q in rooted_quintets_base]
         subtree_u = unrooted_species.extract_tree_with_taxa_labels(labels=q_taxa, suppress_unifurcations=True)
-        #subtree_t = true_s_tree.extract_tree_with_taxa_labels(labels=q_taxa, suppress_unifurcations=True)
         quintet_counts = np.asarray(gene_trees.tally_single_quintet(q_taxa))
         quintet_normalizer = sum(quintet_counts) if args.normalized else len(gene_trees)
         quintet_tree_dist = quintet_counts
         if quintet_normalizer != 0:
             quintet_tree_dist = quintet_tree_dist / quintet_normalizer
         quintet_unrooted_indices[j] = get_quintet_unrooted_index(subtree_u, quintets_u)
-        #est_shape = topological_shape(quintet_tree_dist, len(gene_trees), len(taxon_set))
-        #for i in range(len(quintets_r)):
-        #    if dendropy.calculate.treecompare.symmetric_difference(quintets_r[i], true_s_tree) == 0:
-        #        true_shape = idx_2_unlabeled_topology(i)
-        #        break
-        #print(quintet_tree_dist)
-        #sys.stdout.write('Estimated Shape: \n%s \n' % est_shape)
-        #sys.stdout.write('Real Shape: \n%s \n' % true_shape)
         quintet_scores[j] = compute_cost_rooted_quintets(quintet_tree_dist, quintet_unrooted_indices[j],
                                                          rooted_quintet_indices, cost_func, len(gene_trees),
                                                          len(sample_quintet_taxa), shape_coef, abratio)
@@ -217,11 +203,11 @@ def parse_args():
                         required=True, default=None)
 
     parser.add_argument("-sm", "--samplingmethod", type=str,
-                        help="quintet sampling method (TC for triplet cover, LE for linear encoding, RL for random "
-                             "linear)", required=False, default='d')
+                        help="quintet sampling method (LE for linear encoding (default), EXH for exhaustive",
+                        required=False, default='LE')
 
     parser.add_argument("-c", "--cost", type=str,
-                        help="cost function (STAR for running QR*)",
+                        help="cost function (STAR for running QR-STAR)",
                         required=False, default='d')
 
     parser.add_argument("-cfs", "--confidencescore", action='store_true',
@@ -236,10 +222,10 @@ def parse_args():
                         required=False, default=False)
 
     parser.add_argument("-coef", "--coef", type=float,
-                        help="coefficient for shape penalty term", required=False, default=0)
+                        help="coefficient for shape penalty term in QR-STAR", required=False, default=0)
 
     parser.add_argument("-abratio", "--abratio", type=float,
-                        help="Ratio between invariant and inequality penalties used in QR*", required=False, default=1)
+                        help="Ratio between invariant and inequality penalties used in QR-STAR", required=False, default=1)
 
     parser.add_argument("-rs", "--seed", type=int,
                         help="random seed", required=False, default=1234)
