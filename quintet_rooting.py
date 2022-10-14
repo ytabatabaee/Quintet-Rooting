@@ -6,7 +6,7 @@ import sys
 from table_five import TreeSet
 
 from qr.adr_theory import *
-from qr.fitness_cost import cost
+from qr.fitness_cost import *
 from qr.quintet_sampling import *
 from qr.utils import *
 from qr.version import __version__
@@ -23,7 +23,9 @@ def main(args):
     sampling_method = args.samplingmethod.lower()
     random.seed(args.seed)
     cost_func = args.cost.lower()
+    shape_coef = args.coef
     mult_le = args.multiplicity
+    abratio = args.abratio
 
     header = """*********************************
 *     Quintet Rooting """ + __version__ + """    *
@@ -32,6 +34,9 @@ def main(args):
 
     # reading gene tree and unrooted species tree topology files
     tns = dendropy.TaxonNamespace()
+    #true_s_tree = dendropy.Tree.get(path=species_tree_path, schema='newick',
+    #                                taxon_namespace=tns, rooting="force-rooted")
+    #print(true_s_tree)
     unrooted_species = dendropy.Tree.get(path=species_tree_path, schema='newick',
                                          taxon_namespace=tns, rooting="force-unrooted", suppress_edge_lengths=True)
     if len(tns) < 5:
@@ -86,6 +91,8 @@ def main(args):
     quintet_unrooted_indices = np.zeros(len(sample_quintet_taxa), dtype=int)
     quintets_r_all = []
 
+    #est_shape = None
+    #true_shape = None
     for j in range(len(sample_quintet_taxa)):
         q_taxa = sample_quintet_taxa[j]
         quintets_u = [
@@ -95,14 +102,24 @@ def main(args):
             dendropy.Tree.get(data=map_taxon_namespace(str(q), q_taxa) + ';', schema='newick', rooting='force-rooted',
                               taxon_namespace=tns) for q in rooted_quintets_base]
         subtree_u = unrooted_species.extract_tree_with_taxa_labels(labels=q_taxa, suppress_unifurcations=True)
+        #subtree_t = true_s_tree.extract_tree_with_taxa_labels(labels=q_taxa, suppress_unifurcations=True)
         quintet_counts = np.asarray(gene_trees.tally_single_quintet(q_taxa))
         quintet_normalizer = sum(quintet_counts) if args.normalized else len(gene_trees)
         quintet_tree_dist = quintet_counts
         if quintet_normalizer != 0:
             quintet_tree_dist = quintet_tree_dist / quintet_normalizer
         quintet_unrooted_indices[j] = get_quintet_unrooted_index(subtree_u, quintets_u)
+        #est_shape = topological_shape(quintet_tree_dist, len(gene_trees), len(taxon_set))
+        #for i in range(len(quintets_r)):
+        #    if dendropy.calculate.treecompare.symmetric_difference(quintets_r[i], true_s_tree) == 0:
+        #        true_shape = idx_2_unlabeled_topology(i)
+        #        break
+        #print(quintet_tree_dist)
+        #sys.stdout.write('Estimated Shape: \n%s \n' % est_shape)
+        #sys.stdout.write('Real Shape: \n%s \n' % true_shape)
         quintet_scores[j] = compute_cost_rooted_quintets(quintet_tree_dist, quintet_unrooted_indices[j],
-                                                         rooted_quintet_indices, cost_func)
+                                                         rooted_quintet_indices, cost_func, len(gene_trees),
+                                                         len(sample_quintet_taxa), shape_coef, abratio)
         quintets_r_all.append(quintets_r)
 
     sys.stdout.write('Preprocessing time: %.2f sec\n' % (time.time() - proc_time))
@@ -142,7 +159,7 @@ def main(args):
     sys.stdout.write('Total execution time: %.2f sec\n' % (time.time() - st_time))
 
 
-def compute_cost_rooted_quintets(u_distribution, u_idx, rooted_quintet_indices, cost_func):
+def compute_cost_rooted_quintets(u_distribution, u_idx, rooted_quintet_indices, cost_func, k, q_size, shape_coef, abratio):
     """
     Scores the 7 possible rootings of an unrooted quintet
     :param np.ndarray u_distribution: unrooted quintet tree probability distribution
@@ -157,7 +174,7 @@ def compute_cost_rooted_quintets(u_distribution, u_idx, rooted_quintet_indices, 
         idx = rooted_tree_indices[i]
         unlabeled_topology = idx_2_unlabeled_topology(idx)
         indices = rooted_quintet_indices[idx]
-        costs[i] = cost(u_distribution, indices, unlabeled_topology, cost_func)
+        costs[i] = cost(u_distribution, indices, unlabeled_topology, cost_func, k, q_size, shape_coef, abratio)
     return costs
 
 
@@ -204,7 +221,7 @@ def parse_args():
                              "linear)", required=False, default='d')
 
     parser.add_argument("-c", "--cost", type=str,
-                        help="cost function (INQ for inequalities only)",
+                        help="cost function (STAR for running QR*)",
                         required=False, default='d')
 
     parser.add_argument("-cfs", "--confidencescore", action='store_true',
@@ -215,7 +232,14 @@ def parse_args():
                         required=False, default=1)
 
     parser.add_argument("-norm", "--normalized", action='store_true',
-                        help="normalization for unresolved gene trees or missing taxa")
+                        help="normalization for unresolved gene trees or missing taxa",
+                        required=False, default=False)
+
+    parser.add_argument("-coef", "--coef", type=float,
+                        help="coefficient for shape penalty term", required=False, default=0)
+
+    parser.add_argument("-abratio", "--abratio", type=float,
+                        help="Ratio between invariant and inequality penalties used in QR*", required=False, default=1)
 
     parser.add_argument("-rs", "--seed", type=int,
                         help="random seed", required=False, default=1234)
