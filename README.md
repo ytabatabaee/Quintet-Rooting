@@ -5,6 +5,9 @@ Quintet Rooting (QR) is a method for rooting species trees from multi-locus data
 **Publication:**
 Yasamin Tabatabaee, Kowshika Sarker, Tandy Warnow, Quintet Rooting: rooting species trees under the multi-species coalescent model, Bioinformatics, Volume 38, Issue Supplement_1, July 2022, Pages i109–i117, https://doi.org/10.1093/bioinformatics/btac224
 
+**QR-STAR:**
+QR-STAR is a statistically consistent variant of QR that has an additional step for determining the topological shape of each quintet. See usage instructions for how to run each variant.
+
 ## Dependencies
 Quintet Rooting is implemented in Python 3. It was developed and tested in Python version 3.7.0 and has the following dependencies:
 - [Python 3.x](https://www.python.org)
