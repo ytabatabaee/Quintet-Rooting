@@ -1,12 +1,8 @@
 # Quintet Rooting
 
-Quintet Rooting (QR) is a method for rooting species trees from multi-locus datasets that uses phylogenetic invariants and inequalities established by [Allman, Degnan, and Rhodes (J Math Biol, 2011)](https://link.springer.com/article/10.1007/s00285-010-0355-7) under the multi-species coalescent (MSC) model to identify the position of the root in an unrooted species tree. Quintet Rooting is polynomial-time and is especially useful for multi-locus datasets with gene tree discordance due to incomplete lineage sorting (ILS). QR scores different rootings of a given unrooted species tree according to the distribution of unrooted quintets (i.e. 5-leaf trees) induced by a given set of gene trees, and returns the best rooting as well as a ranking over all rooted trees in the search space with a confidence score assigned to each.
+**Quintet Rooting (QR)** is a method for rooting species trees from multi-locus datasets that uses phylogenetic invariants and inequalities established by [Allman, Degnan, and Rhodes (J Math Biol, 2011)](https://link.springer.com/article/10.1007/s00285-010-0355-7) under the multi-species coalescent (MSC) model to identify the position of the root in an unrooted species tree. Quintet Rooting is polynomial-time and is especially useful for multi-locus datasets with gene tree discordance due to incomplete lineage sorting (ILS). QR scores different rootings of a given unrooted species tree according to the distribution of unrooted quintets (i.e. 5-leaf trees) induced by a given set of gene trees, and returns the best rooting as well as a ranking over all rooted trees in the search space with a confidence score assigned to each.
 
-**Publication:**
-Yasamin Tabatabaee, Kowshika Sarker, Tandy Warnow, Quintet Rooting: rooting species trees under the multi-species coalescent model, Bioinformatics, Volume 38, Issue Supplement_1, July 2022, Pages i109–i117, https://doi.org/10.1093/bioinformatics/btac224
-
-**QR-STAR:**
-QR-STAR is a statistically consistent variant of QR that has an additional step for determining the topological shape of each quintet. See usage instructions for how to run each variant.
+**QR-STAR** is a variant of QR that has an additional step for determining the topological shape of each quintet and a different cost function, and is statistically consistent under the multi-species coalescent (MSC) model. See usage instructions for commands to run each variant.
 
 ## Dependencies
 Quintet Rooting is implemented in Python 3. It was developed and tested in Python version 3.7.0 and has the following dependencies:
@@ -59,3 +55,11 @@ Quintet Rooting can run with different sampling methods. The default version (ca
 
 ## Additional Files
 The basic topology of all rooted and unrooted binary 5-leaf trees are provided in the `./qr/topologies` directory (taxa are simply shown with numbers 1-5). The `./qr/rooted_quintet_indices.npy` file contains the set of equivalence classes for the distribution of unrooted gene trees for each of the 105 5-taxon rooted species tree. The `./qr/adr_theory.py` file provides useful functions related to the ADR theory, such as functions for visualizing the partial order of each 5-taxon rooted tree with a hasse diagram. These scripts have an additional dependency on [Graphviz](https://pypi.org/project/graphviz/) and [Matplotlib 3.x](https://matplotlib.org).
+
+## Publication
+Yasamin Tabatabaee, Kowshika Sarker, Tandy Warnow, Quintet Rooting: rooting species trees under the multi-species coalescent model, Bioinformatics, Volume 38, Issue Supplement_1, July 2022, Pages i109–i117, https://doi.org/10.1093/bioinformatics/btac224
+
+Yasamin Tabatabaee, Sebastien Roch, Tandy Warnow, Statistically consistent rooting of species trees under the multi-species coalescent model, bioRxiv, https://doi.org/10.1101/2022.10.26.513897
+
+### Data Availability
+Datasets used in these papers are available in the following repositories: [QR datasets](https://github.com/ytabatabaee/QR-paper) and [QR-STAR datasets](https://github.com/ytabatabaee/QR-STAR-paper)
