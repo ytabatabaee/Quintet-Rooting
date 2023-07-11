@@ -67,3 +67,6 @@ Y. Tabatabaee, S. Roch and T. Warnow (2023). Statistically consistent rooting of
 
 ### Data Availability
 Datasets used in these papers are available in the following repositories: [QR datasets](https://github.com/ytabatabaee/QR-paper) and [QR-STAR datasets](https://github.com/ytabatabaee/QR-STAR-paper)
+
+## Acknowledgements
+The algorithm was originally designed by Tandy Warnow and Yasamin Tabatabaee. The code is contributed by Yasamin Tabatabaee, Baqiao Liu and Kowshika Sarker.
