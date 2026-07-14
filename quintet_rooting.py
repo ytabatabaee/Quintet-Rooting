@@ -38,6 +38,12 @@ def main(args):
                                          taxon_namespace=tns, rooting="force-unrooted", suppress_edge_lengths=True)
     if len(tns) < 5:
         raise Exception("Species tree " + species_tree_path + " has less than 5 taxa!\n")
+    set_recursion_limit_for_taxa(len(tns))
+    gene_tree_taxa = collect_newick_leaf_labels(gene_tree_path)
+    missing_gene_taxa = set(t.label for t in tns) - gene_tree_taxa
+    if missing_gene_taxa:
+        sys.stdout.write("Warning: %d species-tree taxa are absent from all gene trees; "
+                         "quintets containing them will receive zero counts.\n" % len(missing_gene_taxa))
     gene_trees = TreeSet(gene_tree_path)
 
     # reading fixed quintet topology files
@@ -93,7 +99,10 @@ def main(args):
 
     for j in range(len(sample_quintet_taxa)):
         q_taxa = sample_quintet_taxa[j]
-        quintet_counts = np.asarray(gene_trees.tally_single_quintet(q_taxa))
+        if set(q_taxa).issubset(gene_tree_taxa):
+            quintet_counts = np.asarray(gene_trees.tally_single_quintet(q_taxa))
+        else:
+            quintet_counts = np.zeros(15)
         quintet_normalizer = sum(quintet_counts) if args.normalized else len(gene_trees)
         quintet_tree_dist = quintet_counts
         if quintet_normalizer != 0:
@@ -182,6 +191,14 @@ def get_all_rooted_trees(unrooted_tree):
             rooted_candidates.pop(0)
             break
     return rooted_candidates
+
+
+def set_recursion_limit_for_taxa(n_taxa):
+    """
+    DendroPy uses recursive copying/traversal internally and can exceed
+    Python's default recursion limit on large or highly unbalanced trees.
+    """
+    sys.setrecursionlimit(max(sys.getrecursionlimit(), 10 * n_taxa + 1000))
 
 
 def parse_args():

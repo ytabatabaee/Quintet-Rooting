@@ -93,6 +93,76 @@ def map_taxon_namespace(string, taxa_labels):
     return multireplace(string, taxa_map_dict)
 
 
+def collect_newick_leaf_labels(path):
+    """
+    Returns the union of leaf labels in a Newick file without constructing trees.
+    """
+    labels = set()
+    expect_leaf = True
+    with open(path) as fp:
+        data = fp.read()
+
+    i = 0
+    while i < len(data):
+        ch = data[i]
+        if ch == '[':
+            depth = 1
+            i += 1
+            while i < len(data) and depth:
+                if data[i] == '[':
+                    depth += 1
+                elif data[i] == ']':
+                    depth -= 1
+                i += 1
+            continue
+        if ch in ' \t\r\n':
+            i += 1
+            continue
+        if ch in '(,':
+            expect_leaf = True
+            i += 1
+            continue
+        if ch == ')':
+            expect_leaf = False
+            i += 1
+            continue
+        if ch == ';':
+            expect_leaf = True
+            i += 1
+            continue
+        if not expect_leaf:
+            i += 1
+            continue
+
+        if ch in '\'"':
+            quote = ch
+            label = []
+            i += 1
+            while i < len(data):
+                ch = data[i]
+                i += 1
+                if ch == quote:
+                    if i < len(data) and data[i] == quote:
+                        label.append(quote)
+                        i += 1
+                        continue
+                    break
+                label.append(ch)
+            if label:
+                labels.add(''.join(label))
+        elif ch not in ':,();':
+            start = i
+            while i < len(data) and data[i] not in ':,();[] \t\r\n':
+                i += 1
+            if i > start:
+                labels.add(data[start:i])
+        else:
+            i += 1
+            continue
+        expect_leaf = False
+    return labels
+
+
 def idx_2_unlabeled_topology(idx):
     """
     Given an index of a rooted binary tree (1-105), returns its topological shape
