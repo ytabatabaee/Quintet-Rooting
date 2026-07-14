@@ -141,6 +141,175 @@ def get_quintet_rooted_index(subtree_r, quintets_r, u_idx):
     return idx_r
 
 
+def _quintet_label_map(q_taxa):
+    return {q_taxa[i]: str(i + 1) for i in range(5)}
+
+
+def _leaf_labels(node, label_map=None):
+    if label_map is None:
+        return frozenset(leaf.taxon.label for leaf in node.leaf_iter())
+    return frozenset(label_map[leaf.taxon.label] for leaf in node.leaf_iter())
+
+
+def unrooted_quintet_signature(tree, label_map=None):
+    """
+    Returns a canonical split signature for an unrooted 5-taxon tree.
+    """
+    all_taxa = _leaf_labels(tree.seed_node, label_map)
+    splits = set()
+    for edge in tree.postorder_edge_iter():
+        if edge.head_node is None:
+            continue
+        side = _leaf_labels(edge.head_node, label_map)
+        other = all_taxa - side
+        if len(side) in (0, len(all_taxa)) or min(len(side), len(other)) <= 1:
+            continue
+        canon = side if (len(side), sorted(side)) <= (len(other), sorted(other)) else other
+        splits.add(tuple(sorted(canon)))
+    return tuple(sorted(splits))
+
+
+def rooted_quintet_signature(tree, label_map=None):
+    """
+    Returns a canonical clade signature for a rooted 5-taxon tree.
+    """
+    n_taxa = len(list(tree.leaf_node_iter()))
+    clades = []
+    for node in tree.postorder_node_iter():
+        if node.is_leaf() or node is tree.seed_node:
+            continue
+        clade = _leaf_labels(node, label_map)
+        if 1 < len(clade) < n_taxa:
+            clades.append(tuple(sorted(clade)))
+    return tuple(sorted(clades, key=lambda c: (len(c), c)))
+
+
+def build_unrooted_quintet_lookup(quintets_u):
+    return {unrooted_quintet_signature(q): i for i, q in enumerate(quintets_u)}
+
+
+def build_rooted_quintet_lookup(quintets_r):
+    return {rooted_quintet_signature(q): i for i, q in enumerate(quintets_r)}
+
+
+def precompute_unrooted_split_sets(tree):
+    all_taxa = _leaf_labels(tree.seed_node)
+    split_sets = []
+    for edge in tree.postorder_edge_iter():
+        if edge.head_node is None:
+            continue
+        side = _leaf_labels(edge.head_node)
+        if len(side) not in (0, len(all_taxa)):
+            split_sets.append(side)
+    return split_sets
+
+
+def precompute_rooted_clade_sets(tree):
+    n_taxa = len(list(tree.leaf_node_iter()))
+    clade_sets = []
+    for node in tree.postorder_node_iter():
+        if node.is_leaf() or node is tree.seed_node:
+            continue
+        clade = _leaf_labels(node)
+        if 1 < len(clade) < n_taxa:
+            clade_sets.append(clade)
+    return clade_sets
+
+
+def _canonical_split(side, all_taxa):
+    other = all_taxa - side
+    return side if (len(side), sorted(side)) <= (len(other), sorted(other)) else other
+
+
+def _root_split(tree, all_taxa):
+    children = list(tree.seed_node.child_node_iter())
+    if len(children) < 2:
+        return None
+    return _canonical_split(_leaf_labels(children[0]), all_taxa)
+
+
+def precompute_rooting_candidate_data(unrooted_tree):
+    """
+    Returns root-edge split identifiers and rooted clade sets in the same order
+    as get_all_rooted_trees(), without materializing every rooted tree.
+    """
+    tree = dendropy.Tree(unrooted_tree)
+    all_taxa = _leaf_labels(tree.seed_node)
+    root_splits = []
+    rooted_clades = []
+    raw_indices = []
+    for raw_idx, edge in enumerate(tree.preorder_edge_iter()):
+        try:
+            tree.reroot_at_edge(edge, update_bipartitions=False)
+            root_split = _root_split(tree, all_taxa)
+            if root_split is None:
+                continue
+            root_splits.append(root_split)
+            rooted_clades.append(precompute_rooted_clade_sets(tree))
+            raw_indices.append(raw_idx)
+        except:
+            continue
+
+    if root_splits:
+        root_splits.pop(0)
+        rooted_clades.pop(0)
+        raw_indices.pop(0)
+
+    return root_splits, rooted_clades, raw_indices
+
+
+def materialize_rooted_candidate(unrooted_tree, raw_index):
+    tree = dendropy.Tree(unrooted_tree)
+    for idx, edge in enumerate(tree.preorder_edge_iter()):
+        try:
+            tree.reroot_at_edge(edge, update_bipartitions=True)
+        except:
+            continue
+        if idx == raw_index:
+            return dendropy.Tree(tree)
+    raise ValueError("Root candidate not found in unrooted tree")
+
+
+def unrooted_quintet_signature_from_splits(split_sets, q_taxa):
+    q_set = set(q_taxa)
+    label_map = _quintet_label_map(q_taxa)
+    splits = set()
+    for side in split_sets:
+        q_side = side & q_set
+        q_other = q_set - q_side
+        if len(q_side) in (0, 5) or min(len(q_side), len(q_other)) <= 1:
+            continue
+        side_labels = tuple(sorted(label_map[t] for t in q_side))
+        other_labels = tuple(sorted(label_map[t] for t in q_other))
+        splits.add(side_labels if (len(side_labels), side_labels) <= (len(other_labels), other_labels)
+                   else other_labels)
+    return tuple(sorted(splits))
+
+
+def rooted_quintet_signature_from_clades(clade_sets, q_taxa):
+    q_set = set(q_taxa)
+    label_map = _quintet_label_map(q_taxa)
+    clades = set()
+    for clade in clade_sets:
+        q_clade = clade & q_set
+        if 1 < len(q_clade) < 5:
+            clades.add(tuple(sorted(label_map[t] for t in q_clade)))
+    return tuple(sorted(clades, key=lambda c: (len(c), c)))
+
+
+def get_quintet_unrooted_index_from_splits(split_sets, q_taxa, unrooted_lookup):
+    return unrooted_lookup[unrooted_quintet_signature_from_splits(split_sets, q_taxa)]
+
+
+def get_quintet_rooted_index_from_clades(clade_sets, q_taxa, u_idx, rooted_lookup):
+    from qr.adr_theory import u2r_mapping
+    rooted_idx = rooted_lookup[rooted_quintet_signature_from_clades(clade_sets, q_taxa)]
+    for i in range(7):
+        if u2r_mapping[u_idx][i] == rooted_idx:
+            return i
+    return -1
+
+
 def gene_tree_distribution(gene_trees, q_taxa, quintets_u, normalized):
     """
     Given a set of gene trees, labels of 5 taxa 'q_taxa' and the set of unrooted
