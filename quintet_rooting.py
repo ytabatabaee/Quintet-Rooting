@@ -38,6 +38,12 @@ def main(args):
                                          taxon_namespace=tns, rooting="force-unrooted", suppress_edge_lengths=True)
     if len(tns) < 5:
         raise Exception("Species tree " + species_tree_path + " has less than 5 taxa!\n")
+    set_recursion_limit_for_taxa(len(tns))
+    gene_tree_taxa = collect_newick_leaf_labels(gene_tree_path)
+    missing_gene_taxa = set(t.label for t in tns) - gene_tree_taxa
+    if missing_gene_taxa:
+        sys.stdout.write("Warning: %d species-tree taxa are absent from all gene trees; "
+                         "quintets containing them will receive zero counts.\n" % len(missing_gene_taxa))
     gene_trees = TreeSet(gene_tree_path)
 
     # reading fixed quintet topology files
@@ -52,13 +58,17 @@ def main(args):
     rooted_quintets_base.read(path=script_path + '/qr/topologies/balanced.tre', schema='newick',
                               rooting="default-rooted")
     rooted_quintet_indices = np.load(script_path + '/qr/rooted_quintet_indices.npy')
+    unrooted_quintet_lookup = build_unrooted_quintet_lookup(unrooted_quintets_base)
+    rooted_quintet_lookup = build_rooted_quintet_lookup(rooted_quintets_base)
 
     sys.stdout.write('Loading time: %.2f sec\n' % (time.time() - st_time))
     ss_time = time.time()
 
     # search space of rooted trees
-    rooted_candidates = get_all_rooted_trees(unrooted_species)
-    r_score = np.zeros(len(rooted_candidates))
+    rooted_candidate_splits, rooted_candidate_clades, rooted_candidate_raw_indices = \
+        precompute_rooting_candidate_data(unrooted_species)
+    unrooted_species_splits = precompute_unrooted_split_sets(unrooted_species)
+    r_score = np.zeros(len(rooted_candidate_splits))
 
     sys.stdout.write('Creating search space time: %.2f sec\n' % (time.time() - ss_time))
     sm_time = time.time()
@@ -80,45 +90,40 @@ def main(args):
 
     sys.stdout.write("Number of taxa (n): %d\n" % len(tns))
     sys.stdout.write("Number of gene trees (k): %d\n" % len(gene_trees))
-    sys.stdout.write("Size of search space (|R|): %d\n" % len(rooted_candidates))
+    sys.stdout.write("Size of search space (|R|): %d\n" % len(rooted_candidate_splits))
     sys.stdout.write("Size of sampled quintets set (|Q*|): %d\n" % len(sample_quintet_taxa))
 
     # preprocessing
     quintet_scores = np.zeros((len(sample_quintet_taxa), 7))
     quintet_unrooted_indices = np.zeros(len(sample_quintet_taxa), dtype=int)
-    quintets_r_all = []
 
     for j in range(len(sample_quintet_taxa)):
         q_taxa = sample_quintet_taxa[j]
-        quintets_u = [
-            dendropy.Tree.get(data=map_taxon_namespace(str(q), q_taxa) + ';', schema='newick', rooting='force-unrooted',
-                              taxon_namespace=tns) for q in unrooted_quintets_base]
-        quintets_r = [
-            dendropy.Tree.get(data=map_taxon_namespace(str(q), q_taxa) + ';', schema='newick', rooting='force-rooted',
-                              taxon_namespace=tns) for q in rooted_quintets_base]
-        subtree_u = unrooted_species.extract_tree_with_taxa_labels(labels=q_taxa, suppress_unifurcations=True)
-        quintet_counts = np.asarray(gene_trees.tally_single_quintet(q_taxa))
+        if set(q_taxa).issubset(gene_tree_taxa):
+            quintet_counts = np.asarray(gene_trees.tally_single_quintet(q_taxa))
+        else:
+            quintet_counts = np.zeros(15)
         quintet_normalizer = sum(quintet_counts) if args.normalized else len(gene_trees)
         quintet_tree_dist = quintet_counts
         if quintet_normalizer != 0:
             quintet_tree_dist = quintet_tree_dist / quintet_normalizer
-        quintet_unrooted_indices[j] = get_quintet_unrooted_index(subtree_u, quintets_u)
+        quintet_unrooted_indices[j] = get_quintet_unrooted_index_from_splits(unrooted_species_splits, q_taxa,
+                                                                              unrooted_quintet_lookup)
         quintet_scores[j] = compute_cost_rooted_quintets(quintet_tree_dist, quintet_unrooted_indices[j],
                                                          rooted_quintet_indices, cost_func, len(gene_trees),
                                                          len(sample_quintet_taxa), shape_coef, abratio)
-        quintets_r_all.append(quintets_r)
 
     sys.stdout.write('Preprocessing time: %.2f sec\n' % (time.time() - proc_time))
     sc_time = time.time()
 
     # computing scores
     min_score = sys.maxsize
-    for i in range(len(rooted_candidates)):
-        r = rooted_candidates[i]
+    for i in range(len(rooted_candidate_splits)):
+        r_clades = rooted_candidate_clades[i]
         for j in range(len(sample_quintet_taxa)):
             q_taxa = sample_quintet_taxa[j]
-            subtree_r = r.extract_tree_with_taxa_labels(labels=q_taxa, suppress_unifurcations=True)
-            r_idx = get_quintet_rooted_index(subtree_r, quintets_r_all[j], quintet_unrooted_indices[j])
+            r_idx = get_quintet_rooted_index_from_clades(r_clades, q_taxa, quintet_unrooted_indices[j],
+                                                         rooted_quintet_lookup)
             r_score[i] += quintet_scores[j][r_idx]
             if not args.confidencescore and r_score[i] > min_score:
                 break
@@ -126,11 +131,12 @@ def main(args):
             min_score = r_score[i]
 
     min_idx = np.argmin(r_score)
+    best_rooted_candidate = materialize_rooted_candidate(unrooted_species, rooted_candidate_raw_indices[min_idx])
     with open(output_path, 'w') as fp:
-        fp.write(str(rooted_candidates[min_idx]) + ';\n')
+        fp.write(str(best_rooted_candidate) + ';\n')
 
     sys.stdout.write('Scoring time: %.2f sec\n' % (time.time() - sc_time))
-    sys.stdout.write('Best rooting: \n%s \n' % str(rooted_candidates[min_idx]))
+    sys.stdout.write('Best rooting: \n%s \n' % str(best_rooted_candidate))
 
     # computing confidence scores
     if args.confidencescore:
@@ -139,7 +145,7 @@ def main(args):
         tree_ranking_indices = np.argsort(r_score)
         with open(output_path + ".rank.cfn", 'w') as fp:
             for i in tree_ranking_indices:
-                fp.write(str(rooted_candidates[i]) + ';\n')
+                fp.write(str(materialize_rooted_candidate(unrooted_species, rooted_candidate_raw_indices[i])) + ';\n')
                 fp.write(str(confidence_scores[i]) + '\n')
 
     sys.stdout.write('Total execution time: %.2f sec\n' % (time.time() - st_time))
@@ -185,6 +191,14 @@ def get_all_rooted_trees(unrooted_tree):
             rooted_candidates.pop(0)
             break
     return rooted_candidates
+
+
+def set_recursion_limit_for_taxa(n_taxa):
+    """
+    DendroPy uses recursive copying/traversal internally and can exceed
+    Python's default recursion limit on large or highly unbalanced trees.
+    """
+    sys.setrecursionlimit(max(sys.getrecursionlimit(), 10 * n_taxa + 1000))
 
 
 def parse_args():
