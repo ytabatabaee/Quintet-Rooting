@@ -22,13 +22,13 @@ def main(args):
     output_path = args.outputtree
     sampling_method = args.samplingmethod.lower()
     random.seed(args.seed)
-    cost_func = args.cost.lower()
+    cost_func = 'd' if args.legacyqr else args.cost.lower()
     shape_coef = args.coef
     mult_le = args.multiplicity
     abratio = args.abratio
 
     header = """*********************************
-*     Quintet Rooting """ + __version__ + """    *
+*     QR-STAR & QR v""" + __version__ + """    *
 *********************************"""
     sys.stdout.write(header + '\n')
 
@@ -206,7 +206,7 @@ def set_recursion_limit_for_taxa(n_taxa):
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description=str('== Quintet Rooting ' + __version__ + ' =='))
+    parser = argparse.ArgumentParser(description=str('== QR-STAR & QR v' + __version__ + ' =='))
 
     parser.add_argument("-t", "--speciestree", type=str,
                         help="input unrooted species tree in newick format",
@@ -225,8 +225,11 @@ def parse_args():
                         required=False, default='LE')
 
     parser.add_argument("-c", "--cost", type=str,
-                        help="cost function (STAR for running QR-STAR)",
-                        required=False, default='d')
+                        help="cost function (STAR for QR-STAR, D for legacy QR)",
+                        required=False, default='STAR')
+
+    parser.add_argument("--legacyqr", action='store_true',
+                        help="run the original QR method (equivalent to -c D)")
 
     parser.add_argument("-cfs", "--confidencescore", action='store_true',
                         help="output confidence scores for each possible rooted tree as well as a ranking")
