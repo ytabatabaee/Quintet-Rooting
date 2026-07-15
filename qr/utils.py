@@ -328,6 +328,32 @@ def precompute_rooting_candidate_data(unrooted_tree):
     return root_splits, rooted_clades, raw_indices
 
 
+def precompute_rooting_candidate_splits(unrooted_tree):
+    """
+    Returns root-edge split identifiers in the same order as get_all_rooted_trees().
+    """
+    tree = dendropy.Tree(unrooted_tree)
+    all_taxa = _leaf_labels(tree.seed_node)
+    root_splits = []
+    raw_indices = []
+    for raw_idx, edge in enumerate(tree.preorder_edge_iter()):
+        try:
+            tree.reroot_at_edge(edge, update_bipartitions=False)
+            root_split = _root_split(tree, all_taxa)
+            if root_split is None:
+                continue
+            root_splits.append(root_split)
+            raw_indices.append(raw_idx)
+        except:
+            continue
+
+    if root_splits:
+        root_splits.pop(0)
+        raw_indices.pop(0)
+
+    return root_splits, raw_indices
+
+
 def materialize_rooted_candidate(unrooted_tree, raw_index):
     tree = dendropy.Tree(unrooted_tree)
     for idx, edge in enumerate(tree.preorder_edge_iter()):
@@ -338,6 +364,134 @@ def materialize_rooted_candidate(unrooted_tree, raw_index):
         if idx == raw_index:
             return dendropy.Tree(tree)
     raise ValueError("Root candidate not found in unrooted tree")
+
+
+_QUINTET_MASK_SIZE = [0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
+                      1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5]
+
+
+def _quintet_mask_signature(tree):
+    label_map = {str(i + 1): 1 << i for i in range(5)}
+    clades = set()
+    for node in tree.postorder_node_iter():
+        if node.is_leaf() or node is tree.seed_node:
+            continue
+        mask = 0
+        for leaf in node.leaf_iter():
+            mask |= label_map[leaf.taxon.label]
+        if 1 < _QUINTET_MASK_SIZE[mask] < 5:
+            clades.add(mask)
+    return tuple(sorted(clades, key=lambda m: (_QUINTET_MASK_SIZE[m], m)))
+
+
+def _quintet_mask_signature_bits(tree):
+    bits = 0
+    for mask in _quintet_mask_signature(tree):
+        bits |= 1 << mask
+    return bits
+
+
+def build_rooted_quintet_mask_lookup(quintets_r):
+    return {_quintet_mask_signature(q): i for i, q in enumerate(quintets_r)}
+
+
+def build_rooted_quintet_mask_bits_lookup(quintets_r):
+    return {_quintet_mask_signature_bits(q): i for i, q in enumerate(quintets_r)}
+
+
+def build_rooted_quintet_local_index(rooted_quintet_mask_lookup):
+    from qr.adr_theory import u2r_mapping
+    local_index = np.full((len(u2r_mapping), 105), -1, dtype=np.int8)
+    for u_idx in range(len(u2r_mapping)):
+        for i in range(7):
+            local_index[u_idx][u2r_mapping[u_idx][i]] = i
+    return local_index
+
+
+def build_taxon_bit_map(taxon_labels):
+    return {label: 1 << i for i, label in enumerate(taxon_labels)}
+
+
+def taxa_mask(taxa, taxon_bit_map):
+    mask = 0
+    for taxon in taxa:
+        mask |= taxon_bit_map[taxon]
+    return mask
+
+
+def split_set_masks(split_sets, taxon_bit_map):
+    return [taxa_mask(split_set, taxon_bit_map) for split_set in split_sets]
+
+
+def root_split_indices(root_splits, split_sets, all_taxa):
+    split_indices = {}
+    for i, split_set in enumerate(split_sets):
+        split_indices.setdefault(_canonical_split(split_set, all_taxa), i)
+    return [split_indices[root_split] for root_split in root_splits]
+
+
+def build_root_in_split_matrix(split_masks, root_masks, all_taxa_mask):
+    root_in_split = np.zeros((len(split_masks), len(root_masks)), dtype=bool)
+    for split_idx, split_mask in enumerate(split_masks):
+        for root_idx, root_mask in enumerate(root_masks):
+            root_in_split[split_idx, root_idx] = bool(split_mask & root_mask) and \
+                                                bool(split_mask & (all_taxa_mask ^ root_mask))
+    return root_in_split
+
+
+def quintet_split_mask_info(q_taxa, split_masks, taxon_bit_map):
+    full_q_mask = taxa_mask(q_taxa, taxon_bit_map)
+    local_bits = [taxon_bit_map[taxon] for taxon in q_taxa]
+    info = []
+    for split_idx, split_mask in enumerate(split_masks):
+        q_intersection = split_mask & full_q_mask
+        if q_intersection == 0 or q_intersection == full_q_mask:
+            continue
+        local_mask = 0
+        for i in range(5):
+            if q_intersection & local_bits[i]:
+                local_mask |= 1 << i
+        info.append((split_idx, local_mask))
+    return info
+
+
+def rooted_quintet_indices_for_all_roots(q_split_info, root_in_split, root_split_idxs, rooted_quintet_mask_bits_lookup,
+                                         rooted_quintet_local_index, u_idx):
+    signatures = np.zeros(len(root_split_idxs), dtype=np.uint64)
+    for split_idx, q_mask in q_split_info:
+        complement = 31 ^ q_mask
+        false_bit = np.uint64(1 << q_mask) if 1 < _QUINTET_MASK_SIZE[q_mask] < 5 else np.uint64(0)
+        true_bit = np.uint64(1 << complement) if 1 < _QUINTET_MASK_SIZE[complement] < 5 else np.uint64(0)
+        signatures |= np.where(root_in_split[split_idx], true_bit, false_bit)
+        root_edge_bit = false_bit | true_bit
+        if root_edge_bit:
+            signatures[root_split_idxs == split_idx] |= root_edge_bit
+
+    unique_signatures, inverse = np.unique(signatures, return_inverse=True)
+    unique_indices = np.fromiter((rooted_quintet_local_index[u_idx][rooted_quintet_mask_bits_lookup[int(sig)]]
+                                  for sig in unique_signatures), dtype=np.int8, count=len(unique_signatures))
+    return unique_indices[inverse]
+
+
+def rooted_quintet_index_from_split_masks(q_split_info, split_masks, all_taxa_mask, root_mask, root_split_idx,
+                                          rooted_quintet_mask_lookup, rooted_quintet_local_index, u_idx):
+    signature = set()
+    root_complement = all_taxa_mask ^ root_mask
+    for split_idx, q_mask in q_split_info:
+        if split_idx == root_split_idx:
+            masks = (q_mask, 31 ^ q_mask)
+        else:
+            split_mask = split_masks[split_idx]
+            if (split_mask & root_mask) and (split_mask & root_complement):
+                masks = (31 ^ q_mask,)
+            else:
+                masks = (q_mask,)
+        for mask in masks:
+            if 1 < _QUINTET_MASK_SIZE[mask] < 5:
+                signature.add(mask)
+
+    rooted_idx = rooted_quintet_mask_lookup[tuple(sorted(signature, key=lambda m: (_QUINTET_MASK_SIZE[m], m)))]
+    return rooted_quintet_local_index[u_idx][rooted_idx]
 
 
 def unrooted_quintet_signature_from_splits(split_sets, q_taxa):
