@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qrstar"
+dynamic = ["version"]
+description = "QR-STAR: rooting species trees from unrooted gene trees"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { file = "LICENSE" }
+authors = [
+    { name = "Yasamin Tabatabaee" }
+]
+dependencies = [
+    "DendroPy>=4",
+    "numpy",
+    "table-five",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+
+[project.scripts]
+qrstar = "qr.cli:run"
+
+[project.urls]
+Homepage = "https://github.com/ytabatabaee/Quintet-Rooting"
+
+[tool.setuptools.dynamic]
+version = { attr = "qr.version.__version__" }
+
+[tool.setuptools.packages.find]
+include = ["qr*"]
+
+[tool.setuptools.package-data]
+qr = [
+    "rooted_quintet_indices.npy",
+    "topologies/*.tre",
+]
