@@ -60,21 +60,30 @@ def main(args):
     rooted_quintet_indices = np.load(script_path + '/qr/rooted_quintet_indices.npy')
     unrooted_quintet_lookup = build_unrooted_quintet_lookup(unrooted_quintets_base)
     rooted_quintet_lookup = build_rooted_quintet_lookup(rooted_quintets_base)
+    rooted_quintet_mask_lookup = build_rooted_quintet_mask_lookup(rooted_quintets_base)
+    rooted_quintet_mask_bits_lookup = build_rooted_quintet_mask_bits_lookup(rooted_quintets_base)
+    rooted_quintet_local_index = build_rooted_quintet_local_index(rooted_quintet_mask_lookup)
+    taxon_set = [t.label for t in tns]
 
     sys.stdout.write('Loading time: %.2f sec\n' % (time.time() - st_time))
     ss_time = time.time()
 
     # search space of rooted trees
-    rooted_candidate_splits, rooted_candidate_clades, rooted_candidate_raw_indices = \
-        precompute_rooting_candidate_data(unrooted_species)
+    rooted_candidate_splits, rooted_candidate_raw_indices = precompute_rooting_candidate_splits(unrooted_species)
     unrooted_species_splits = precompute_unrooted_split_sets(unrooted_species)
+    taxon_bit_map = build_taxon_bit_map(taxon_set)
+    all_taxa_mask = taxa_mask(taxon_set, taxon_bit_map)
+    split_masks = split_set_masks(unrooted_species_splits, taxon_bit_map)
+    root_masks = [taxa_mask(split_set, taxon_bit_map) for split_set in rooted_candidate_splits]
+    root_split_idxs = np.asarray(root_split_indices(rooted_candidate_splits, unrooted_species_splits,
+                                                    frozenset(taxon_set)))
+    root_in_split = build_root_in_split_matrix(split_masks, root_masks, all_taxa_mask)
     r_score = np.zeros(len(rooted_candidate_splits))
 
     sys.stdout.write('Creating search space time: %.2f sec\n' % (time.time() - ss_time))
     sm_time = time.time()
 
     # set of sampled quintets
-    taxon_set = [t.label for t in tns]
     sample_quintet_taxa = []
     if len(taxon_set) == 5 or sampling_method == 'exh':
         sample_quintet_taxa = list(itertools.combinations(taxon_set, 5))
@@ -96,9 +105,11 @@ def main(args):
     # preprocessing
     quintet_scores = np.zeros((len(sample_quintet_taxa), 7))
     quintet_unrooted_indices = np.zeros(len(sample_quintet_taxa), dtype=int)
+    quintet_split_info = []
 
     for j in range(len(sample_quintet_taxa)):
         q_taxa = sample_quintet_taxa[j]
+        quintet_split_info.append(quintet_split_mask_info(q_taxa, split_masks, taxon_bit_map))
         if set(q_taxa).issubset(gene_tree_taxa):
             quintet_counts = np.asarray(gene_trees.tally_single_quintet(q_taxa))
         else:
@@ -117,18 +128,11 @@ def main(args):
     sc_time = time.time()
 
     # computing scores
-    min_score = sys.maxsize
-    for i in range(len(rooted_candidate_splits)):
-        r_clades = rooted_candidate_clades[i]
-        for j in range(len(sample_quintet_taxa)):
-            q_taxa = sample_quintet_taxa[j]
-            r_idx = get_quintet_rooted_index_from_clades(r_clades, q_taxa, quintet_unrooted_indices[j],
-                                                         rooted_quintet_lookup)
-            r_score[i] += quintet_scores[j][r_idx]
-            if not args.confidencescore and r_score[i] > min_score:
-                break
-        if r_score[i] < min_score:
-            min_score = r_score[i]
+    for j in range(len(sample_quintet_taxa)):
+        r_indices = rooted_quintet_indices_for_all_roots(quintet_split_info[j], root_in_split, root_split_idxs,
+                                                         rooted_quintet_mask_bits_lookup,
+                                                         rooted_quintet_local_index, quintet_unrooted_indices[j])
+        r_score += quintet_scores[j][r_indices]
 
     min_idx = np.argmin(r_score)
     best_rooted_candidate = materialize_rooted_candidate(unrooted_species, rooted_candidate_raw_indices[min_idx])
