@@ -21,7 +21,7 @@ def linear_quintet_encoding_sample(unrooted_tree, taxon_set, multiplicity=1):
                 if edge.is_leaf():
                     quintet = []
                     tri_node = edge.tail_node
-                    tree.reroot_at_node(tri_node, update_bipartitions=True)
+                    tree.reroot_at_node(tri_node, update_bipartitions=False)
                     tri_partition_taxa = []
                     for child in tree.seed_node.child_node_iter():
                         partition = []
@@ -33,12 +33,12 @@ def linear_quintet_encoding_sample(unrooted_tree, taxon_set, multiplicity=1):
                             quintet.extend(random.sample(partition, 1))
                         quintet.extend(random.sample([x for x in taxon_set if x not in quintet], 5 - len(quintet)))
                         sample_quintet_taxa.append(tuple(quintet))
-                    tree.reroot_at_node(seed_node, update_bipartitions=True)
+                    tree.reroot_at_node(seed_node, update_bipartitions=False)
 
                 elif edge.is_internal():
                     quintet = []
                     adj_edges = edge.get_adjacent_edges()
-                    tree.reroot_at_edge(edge, update_bipartitions=True)
+                    tree.reroot_at_edge(edge, update_bipartitions=False)
                     four_partition_taxa = []
                     for e in adj_edges:
                         partition = []
@@ -55,7 +55,7 @@ def linear_quintet_encoding_sample(unrooted_tree, taxon_set, multiplicity=1):
                             quintet.extend(random.sample(partition, 1))
                         quintet.extend(random.sample([x for x in taxon_set if x not in quintet], 5 - len(quintet)))
                         sample_quintet_taxa.append(tuple(quintet))
-                    tree.reroot_at_node(seed_node, update_bipartitions=True)
+                    tree.reroot_at_node(seed_node, update_bipartitions=False)
             except Exception as ex:
                 continue
     return sample_quintet_taxa
