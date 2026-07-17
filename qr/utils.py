@@ -274,6 +274,31 @@ def precompute_unrooted_split_sets(tree):
     return split_sets
 
 
+def _precompute_node_masks(tree, taxon_bit_map):
+    node_masks = {}
+    for node in tree.postorder_node_iter():
+        if node.is_leaf():
+            node_masks[node] = taxon_bit_map[node.taxon.label]
+        else:
+            mask = 0
+            for child in node.child_node_iter():
+                mask |= node_masks[child]
+            node_masks[node] = mask
+    return node_masks
+
+
+def precompute_unrooted_split_masks(tree, taxon_bit_map, all_taxa_mask):
+    node_masks = _precompute_node_masks(tree, taxon_bit_map)
+    split_masks = []
+    for edge in tree.postorder_edge_iter():
+        if edge.head_node is None:
+            continue
+        side = node_masks[edge.head_node]
+        if side not in (0, all_taxa_mask):
+            split_masks.append(side)
+    return split_masks
+
+
 def precompute_rooted_clade_sets(tree):
     n_taxa = len(list(tree.leaf_node_iter()))
     clade_sets = []
@@ -332,26 +357,46 @@ def precompute_rooting_candidate_splits(unrooted_tree):
     """
     Returns root-edge split identifiers in the same order as get_all_rooted_trees().
     """
-    tree = dendropy.Tree(unrooted_tree)
-    all_taxa = _leaf_labels(tree.seed_node)
+    all_taxa = _leaf_labels(unrooted_tree.seed_node)
     root_splits = []
     raw_indices = []
-    for raw_idx, edge in enumerate(tree.preorder_edge_iter()):
-        try:
-            tree.reroot_at_edge(edge, update_bipartitions=False)
-            root_split = _root_split(tree, all_taxa)
-            if root_split is None:
-                continue
-            root_splits.append(root_split)
-            raw_indices.append(raw_idx)
-        except:
+    for raw_idx, edge in enumerate(unrooted_tree.preorder_edge_iter()):
+        if edge.head_node is None:
             continue
+        side = _leaf_labels(edge.head_node)
+        if len(side) in (0, len(all_taxa)):
+            continue
+        root_splits.append(_canonical_split(side, all_taxa))
+        raw_indices.append(raw_idx)
 
     if root_splits:
         root_splits.pop(0)
         raw_indices.pop(0)
 
     return root_splits, raw_indices
+
+
+def precompute_rooting_candidate_masks(unrooted_tree, taxon_bit_map, all_taxa_mask):
+    """
+    Returns root-edge split masks in the same order as get_all_rooted_trees().
+    """
+    node_masks = _precompute_node_masks(unrooted_tree, taxon_bit_map)
+    root_masks = []
+    raw_indices = []
+    for raw_idx, edge in enumerate(unrooted_tree.preorder_edge_iter()):
+        if edge.head_node is None:
+            continue
+        side = node_masks[edge.head_node]
+        if side in (0, all_taxa_mask):
+            continue
+        root_masks.append(side)
+        raw_indices.append(raw_idx)
+
+    if root_masks:
+        root_masks.pop(0)
+        raw_indices.pop(0)
+
+    return root_masks, raw_indices
 
 
 def materialize_rooted_candidate(unrooted_tree, raw_index):
@@ -430,12 +475,27 @@ def root_split_indices(root_splits, split_sets, all_taxa):
     return [split_indices[root_split] for root_split in root_splits]
 
 
+def root_split_indices_from_masks(split_masks, root_masks, all_taxa_mask):
+    split_indices = {}
+    for i, split_mask in enumerate(split_masks):
+        split_indices.setdefault(split_mask, i)
+        split_indices.setdefault(all_taxa_mask ^ split_mask, i)
+    return [split_indices[root_mask] for root_mask in root_masks]
+
+
+def root_split_index_positions(root_split_idxs, split_count):
+    positions = [[] for _ in range(split_count)]
+    for root_idx, split_idx in enumerate(root_split_idxs):
+        positions[split_idx].append(root_idx)
+    return [np.asarray(pos, dtype=int) for pos in positions]
+
+
 def build_root_in_split_matrix(split_masks, root_masks, all_taxa_mask):
     root_in_split = np.zeros((len(split_masks), len(root_masks)), dtype=bool)
     for split_idx, split_mask in enumerate(split_masks):
-        for root_idx, root_mask in enumerate(root_masks):
-            root_in_split[split_idx, root_idx] = bool(split_mask & root_mask) and \
-                                                bool(split_mask & (all_taxa_mask ^ root_mask))
+        root_in_split[split_idx] = [bool(split_mask & root_mask) and
+                                    bool(split_mask & (all_taxa_mask ^ root_mask))
+                                    for root_mask in root_masks]
     return root_in_split
 
 
@@ -455,9 +515,9 @@ def quintet_split_mask_info(q_taxa, split_masks, taxon_bit_map):
     return info
 
 
-def rooted_quintet_indices_for_all_roots(q_split_info, root_in_split, root_split_idxs, rooted_quintet_mask_bits_lookup,
+def rooted_quintet_indices_for_all_roots(q_split_info, root_in_split, root_split_positions, rooted_quintet_mask_bits_lookup,
                                          rooted_quintet_local_index, u_idx):
-    signatures = np.zeros(len(root_split_idxs), dtype=np.uint64)
+    signatures = np.zeros(root_in_split.shape[1], dtype=np.uint64)
     for split_idx, q_mask in q_split_info:
         complement = 31 ^ q_mask
         false_bit = np.uint64(1 << q_mask) if 1 < _QUINTET_MASK_SIZE[q_mask] < 5 else np.uint64(0)
@@ -465,7 +525,7 @@ def rooted_quintet_indices_for_all_roots(q_split_info, root_in_split, root_split
         signatures |= np.where(root_in_split[split_idx], true_bit, false_bit)
         root_edge_bit = false_bit | true_bit
         if root_edge_bit:
-            signatures[root_split_idxs == split_idx] |= root_edge_bit
+            signatures[root_split_positions[split_idx]] |= root_edge_bit
 
     unique_signatures, inverse = np.unique(signatures, return_inverse=True)
     unique_indices = np.fromiter((rooted_quintet_local_index[u_idx][rooted_quintet_mask_bits_lookup[int(sig)]]

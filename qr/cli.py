@@ -71,16 +71,16 @@ def main(args):
     ss_time = time.time()
 
     # search space of rooted trees
-    rooted_candidate_splits, rooted_candidate_raw_indices = precompute_rooting_candidate_splits(unrooted_species)
-    unrooted_species_splits = precompute_unrooted_split_sets(unrooted_species)
     taxon_bit_map = build_taxon_bit_map(taxon_set)
     all_taxa_mask = taxa_mask(taxon_set, taxon_bit_map)
-    split_masks = split_set_masks(unrooted_species_splits, taxon_bit_map)
-    root_masks = [taxa_mask(split_set, taxon_bit_map) for split_set in rooted_candidate_splits]
-    root_split_idxs = np.asarray(root_split_indices(rooted_candidate_splits, unrooted_species_splits,
-                                                    frozenset(taxon_set)))
-    root_in_split = build_root_in_split_matrix(split_masks, root_masks, all_taxa_mask)
-    r_score = np.zeros(len(rooted_candidate_splits))
+    rooted_candidate_masks, rooted_candidate_raw_indices = precompute_rooting_candidate_masks(
+        unrooted_species, taxon_bit_map, all_taxa_mask)
+    split_masks = precompute_unrooted_split_masks(unrooted_species, taxon_bit_map, all_taxa_mask)
+    unrooted_species_splits = precompute_unrooted_split_sets(unrooted_species)
+    root_split_idxs = np.asarray(root_split_indices_from_masks(split_masks, rooted_candidate_masks, all_taxa_mask))
+    root_split_positions = root_split_index_positions(root_split_idxs, len(split_masks))
+    root_in_split = build_root_in_split_matrix(split_masks, rooted_candidate_masks, all_taxa_mask)
+    r_score = np.zeros(len(rooted_candidate_masks))
 
     log_stream.write('Creating search space time: %.2f sec\n' % (time.time() - ss_time))
     sm_time = time.time()
@@ -101,7 +101,7 @@ def main(args):
 
     log_stream.write("Number of taxa (n): %d\n" % len(tns))
     log_stream.write("Number of gene trees (k): %d\n" % len(gene_trees))
-    log_stream.write("Size of search space (|R|): %d\n" % len(rooted_candidate_splits))
+    log_stream.write("Size of search space (|R|): %d\n" % len(rooted_candidate_masks))
     log_stream.write("Size of sampled quintets set (|Q*|): %d\n" % len(sample_quintet_taxa))
 
     # preprocessing
@@ -131,7 +131,7 @@ def main(args):
 
     # computing scores
     for j in range(len(sample_quintet_taxa)):
-        r_indices = rooted_quintet_indices_for_all_roots(quintet_split_info[j], root_in_split, root_split_idxs,
+        r_indices = rooted_quintet_indices_for_all_roots(quintet_split_info[j], root_in_split, root_split_positions,
                                                          rooted_quintet_mask_bits_lookup,
                                                          rooted_quintet_local_index, quintet_unrooted_indices[j])
         r_score += quintet_scores[j][r_indices]

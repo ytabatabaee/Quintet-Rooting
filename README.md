@@ -4,30 +4,30 @@
 
 This repository contains the reference implementation of QR-STAR introduced in [Tabatabaee et al., RECOMB & J. Comp. Biol. (2023)](https://doi.org/10.1101/2022.10.26.513897), as well as the original **Quintet Rooting (QR)** algorithm introduced in [Tabatabaee et al., Bioinformatics (2022)](https://doi.org/10.1093/bioinformatics/btac224). QR-STAR is the recommended method for all new analyses.
 
-## Dependencies
-QR-STAR is implemented in Python 3 and has the following dependencies:
-- [Python 3.x](https://www.python.org)
-- [Dendropy 4.x](https://dendropy.org/index.html)
-- [Numpy](https://numpy.org)
-- [table-five](https://github.com/RuneBlaze/fifteen)
-
-If you have Python 3 and pip, you can install QR-STAR from a local checkout with:
+## Installation
+QR-STAR is implemented in Python 3 and can be installed from PyPI:
 ```
-$ pip install .
+$ python3 -m pip install qrstar
 ```
 
-For development without installing the package, you can still install dependencies with:
+To install the development version from this repository:
 ```
-$ pip install -r requirements.txt
+$ git clone https://github.com/ytabatabaee/Quintet-Rooting.git
+$ cd Quintet-Rooting
+$ python3 -m pip install .
+```
+For editable local development, use:
+```
+$ python3 -m pip install -e .
 ```
 
-## Usage Instructions
+## Usage
 
-**Input:** A file containing an unrooted species tree (with at least 5 taxa) and a file containing a set of unrooted single-copy gene trees, both in newick format (with or without branch lengths, may contain missing taxa).
+**Input:** A file containing a resolved unrooted species tree with at least 5 taxa and a file containing a set of unrooted single-copy gene trees (may contain missing taxa or polytomies), both in newick format (with or without branch lengths).
 
 **Output:** The rooted species tree in newick format. If `-o/--outputtree` is provided, the tree is written to that file; otherwise, it is printed to standard output. When run with `-cfs` and `-o`, an additional file contains a ranking over all rooted trees in the search space sorted according to their confidence scores.
 ```
-$ qrstar -t <species-topology.tre> -g <input-genes.tre> -o <output-tree.tre>
+$ qrstar -t <species-topology.tre> -g <input-genes.tre> [-o <output-tree.tre>]
 ```
 **Arguments**
 - **Required**
@@ -39,7 +39,7 @@ $ qrstar -t <species-topology.tre> -g <input-genes.tre> -o <output-tree.tre>
 ```
  -h,  --help               show this help message and exit
  -o,  --outputtree         output file containing a rooted species tree; stdout if omitted
- -sm, --samplingmode       TC for triplet cover, LE for linear encoding, EXH for exhaustive
+ -sm, --samplingmethod     TC for triplet cover, LE for linear encoding, EXH for exhaustive
  -c,  --cost               cost function (STAR for QR-STAR default, D for legacy QR)
       --legacyqr           run the original QR method (equivalent to -c D)
  -cfs, --confidencescore   output confidence scores for each possible rooted tree
@@ -50,11 +50,12 @@ $ qrstar -t <species-topology.tre> -g <input-genes.tre> -o <output-tree.tre>
  -rs,  --seed              random seed
 ```
 ## Example
-The `example` directory contains a 10-taxon avian species tree with 1000 gene trees. The commands below show examples of different modes of running QR-STAR and QR on this dataset.
+The `example` directory contains two example sets with 10 and 1000 taxon species trees, each with 1000 gene trees. The commands below show examples of different modes of running QR-STAR and QR on these datasets.
 
 QR-STAR in default mode (*recommended*):
 ```
-$ qrstar -t ./example/avian-species-10.tre -g ./example/avian-genes-10.tre -o ./example/avian-rooted-10.tre
+$ qrstar -t ./example/avian-species-10.tre -g ./example/avian-genes-10.tre -o ./example/avian-rooted-10.tre -cfs
+$ qrstar -t ./example/s_tree.trees -g ./example/truegenetrees -o ./example/qrstar_truegenetrees.tre > ./example/qrstar_truegenetrees.log
 ```
 QR-STAR with exhaustive sampling:
 ```
