@@ -6,11 +6,11 @@ import sys
 from importlib import resources
 from table_five import TreeSet
 
-from qr.adr_theory import *
-from qr.fitness_cost import *
-from qr.quintet_sampling import *
-from qr.utils import *
-from qr.version import __version__
+from qrstar.adr_theory import *
+from qrstar.fitness_cost import *
+from qrstar.quintet_sampling import *
+from qrstar.utils import *
+from qrstar.version import __version__
 
 
 def main(args):
@@ -49,7 +49,7 @@ def main(args):
 
     # reading fixed quintet topology files
     tns_base = dendropy.TaxonNamespace()
-    qr_resources = resources.files('qr')
+    qr_resources = resources.files('qrstar')
     unrooted_quintets_base = dendropy.TreeList.get(path=str(qr_resources / 'topologies/quintets.tre'),
                                                    taxon_namespace=tns_base, schema='newick')
     rooted_quintets_base = dendropy.TreeList(taxon_namespace=tns_base)

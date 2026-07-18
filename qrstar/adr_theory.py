@@ -1,6 +1,6 @@
 import dendropy
 import numpy as np
-from qr.utils import *
+from qrstar.utils import *
 import os
 
 

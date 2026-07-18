@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "qrstar"
 dynamic = ["version"]
-description = "QR-STAR: rooting species trees from unrooted gene trees"
+description = "QR-STAR: rooting species trees under the multi-species coalescent"
 readme = "README.md"
 requires-python = ">=3.9"
 license = { file = "LICENSE" }
@@ -25,19 +25,20 @@ classifiers = [
 ]
 
 [project.scripts]
-qrstar = "qr.cli:run"
+qrstar = "qrstar.cli:run"
 
 [project.urls]
-Homepage = "https://github.com/ytabatabaee/Quintet-Rooting"
+Homepage = "https://github.com/ytabatabaee/QR-STAR"
+Repository = "https://github.com/ytabatabaee/QR-STAR"
 
 [tool.setuptools.dynamic]
-version = { attr = "qr.version.__version__" }
+version = { attr = "qrstar.version.__version__" }
 
 [tool.setuptools.packages.find]
-include = ["qr*"]
+include = ["qrstar*"]
 
 [tool.setuptools.package-data]
-qr = [
+qrstar = [
     "rooted_quintet_indices.npy",
     "topologies/*.tre",
 ]

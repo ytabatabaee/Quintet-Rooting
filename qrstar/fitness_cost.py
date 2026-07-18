@@ -1,5 +1,5 @@
 import numpy as np
-from qr.adr_theory import *
+from qrstar.adr_theory import *
 
 
 def cost(u, indices, tree_shape, cost_func, k, q_size, shape_coef, abratio):

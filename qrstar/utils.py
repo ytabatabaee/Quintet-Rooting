@@ -201,7 +201,7 @@ def get_quintet_rooted_index(subtree_r, quintets_r, u_idx):
     :param int u_idx: index of unrooted quintet tree u
     :rtype: int
     """
-    from qr.adr_theory import u2r_mapping
+    from qrstar.adr_theory import u2r_mapping
     idx_r = -1
     for i in range(7):
         idx = u2r_mapping[u_idx][i]
@@ -445,7 +445,7 @@ def build_rooted_quintet_mask_bits_lookup(quintets_r):
 
 
 def build_rooted_quintet_local_index(rooted_quintet_mask_lookup):
-    from qr.adr_theory import u2r_mapping
+    from qrstar.adr_theory import u2r_mapping
     local_index = np.full((len(u2r_mapping), 105), -1, dtype=np.int8)
     for u_idx in range(len(u2r_mapping)):
         for i in range(7):
@@ -586,7 +586,7 @@ def get_quintet_unrooted_index_from_splits(split_sets, q_taxa, unrooted_lookup):
 
 
 def get_quintet_rooted_index_from_clades(clade_sets, q_taxa, u_idx, rooted_lookup):
-    from qr.adr_theory import u2r_mapping
+    from qrstar.adr_theory import u2r_mapping
     rooted_idx = rooted_lookup[rooted_quintet_signature_from_clades(clade_sets, q_taxa)]
     for i in range(7):
         if u2r_mapping[u_idx][i] == rooted_idx:

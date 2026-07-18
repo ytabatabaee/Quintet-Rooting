@@ -12,8 +12,8 @@ $ python3 -m pip install qrstar
 
 To install the development version from this repository:
 ```
-$ git clone https://github.com/ytabatabaee/Quintet-Rooting.git
-$ cd Quintet-Rooting
+$ git clone https://github.com/ytabatabaee/QR-STAR.git
+$ cd QR-STAR
 $ python3 -m pip install .
 ```
 For editable local development, use:
