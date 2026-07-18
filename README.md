@@ -1,8 +1,14 @@
 # QR-STAR: rooting species trees under the multi-species coalescent
+[![PyPI version](https://img.shields.io/pypi/v/qrstar)](https://pypi.org/project/qrstar/)
+[![Python versions](https://img.shields.io/pypi/pyversions/qrstar)](https://pypi.org/project/qrstar/)
+[![License](https://img.shields.io/github/license/ytabatabaee/QR-STAR)](https://github.com/ytabatabaee/QR-STAR/blob/main/LICENSE)
+[![DOI](https://img.shields.io/badge/DOI-10.1089%2Fcmb.2023.0185-blue)](https://doi.org/10.1089/cmb.2023.0185)
 
 **QR-STAR** is a statistically consistent method for rooting species trees given unrooted gene trees under the multispecies coalescent (MSC) model. It is designed for datasets with gene tree discordance due to incomplete lineage sorting (ILS). QR-STAR scores candidate rootings of an unrooted species tree using the distribution of unrooted quintet gene trees  and returns the highest-scoring rooted species tree.
 
-This repository contains the reference implementation of QR-STAR introduced in [Tabatabaee et al., RECOMB & J. Comp. Biol. (2023)](https://doi.org/10.1101/2022.10.26.513897), as well as the original **Quintet Rooting (QR)** algorithm introduced in [Tabatabaee et al., Bioinformatics (2022)](https://doi.org/10.1093/bioinformatics/btac224). QR-STAR is the recommended method for all new analyses.
+> **Scalable to large phylogenomic datasets:** In our benchmark, QR-STAR rooted a species tree with **10,000 species given 1,000 gene trees in approximately 21 minutes**.
+
+This repository provides the reference implementation of QR-STAR, introduced in [Tabatabaee et al., RECOMB and *Journal of Computational Biology* (2023)](https://doi.org/10.1089/cmb.2023.0185), as well as the original **Quintet Rooting (QR)** algorithm introduced in [Tabatabaee et al., *Bioinformatics* (2022)](https://doi.org/10.1093/bioinformatics/btac224). **QR-STAR is the recommended method for all new analyses.**
 
 ## Installation
 QR-STAR is implemented in Python 3 and can be installed from PyPI:
@@ -67,11 +73,30 @@ $ qrstar -t ./example/avian-species-10.tre -g ./example/avian-genes-10.tre -o ./
 ```
 
 ## Publications
-Y. Tabatabaee, K. Sarkar, and T. Warnow (2022). Quintet Rooting: rooting species trees under the multi-species coalescent model, Bioinformatics, Volume 38, Issue Supplement_1, Pages i109–i117, https://doi.org/10.1093/bioinformatics/btac224
 
-Y. Tabatabaee, S. Roch and T. Warnow (2023). Statistically consistent rooting of species trees under the multispecies coalescent model. International Conference on Research in Computational Molecular Biology, Pages 41-57, https://doi.org/10.1101/2022.10.26.513897
+Please cite the paper corresponding to the method used in your analysis:
 
-Y. Tabatabaee, S. Roch and T. Warnow (2023). QR-STAR: A polynomial-time statistically consistent method for rooting species trees under the coalescent. Journal of Computational Biology 30.11 (2023): 1146-1181, https://doi.org/10.1089/cmb.2023.0185
+* If you use **QR-STAR**, including the recommended default command, cite:
+
+  > Y. Tabatabaee, S. Roch, and T. Warnow (2023).
+  > “QR-STAR: A polynomial-time statistically consistent method for rooting species trees under the coalescent.”
+  > *Journal of Computational Biology*, 30(11): 1146–1181.
+  > https://doi.org/10.1089/cmb.2023.0185
+
+* If you use the original **Quintet Rooting (QR)** algorithm, cite:
+
+  > Y. Tabatabaee, K. Sarkar, and T. Warnow (2022).
+  > “Quintet Rooting: Rooting species trees under the multi-species coalescent model.”
+  > *Bioinformatics*, 38(Supplement 1): i109–i117.
+  > https://doi.org/10.1093/bioinformatics/btac224
+
+An earlier version of the QR-STAR work appeared at RECOMB 2023:
+
+> Y. Tabatabaee, S. Roch, and T. Warnow (2023).
+> “Statistically consistent rooting of species trees under the multispecies coalescent model.”
+> *International Conference on Research in Computational Molecular Biology*, pages 41–57.
+> Preprint: https://doi.org/10.1101/2022.10.26.513897
+
 
 ### Data Availability
 Datasets used in these papers are available in the following repositories: [QR datasets](https://github.com/ytabatabaee/QR-paper) and [QR-STAR datasets](https://github.com/ytabatabaee/QR-STAR-paper)
