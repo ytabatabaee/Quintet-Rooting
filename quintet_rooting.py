@@ -1,4 +1,4 @@
-from qr.cli import run
+from qrstar.cli import run
 
 
 if __name__ == "__main__":
