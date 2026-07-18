@@ -215,7 +215,7 @@ def set_recursion_limit_for_taxa(n_taxa):
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(prog='qrstar', description=str('== QR-STAR & QR v' + __version__ + ' =='))
+    parser = argparse.ArgumentParser(prog='qrstar', description=str('== QR-STAR & QR v' + __version__ + ' ==\n\n Rooting species trees from unrooted gene trees'))
 
     parser.add_argument("-t", "--speciestree", type=str,
                         help="input unrooted species tree in newick format",

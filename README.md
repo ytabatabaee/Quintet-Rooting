@@ -1,4 +1,4 @@
-# QR-STAR
+# QR-STAR: rooting species trees under the multi-species coalescent
 
 **QR-STAR** is a statistically consistent method for rooting species trees given unrooted gene trees under the multispecies coalescent (MSC) model. It is designed for datasets with gene tree discordance due to incomplete lineage sorting (ILS). QR-STAR scores candidate rootings of an unrooted species tree using the distribution of unrooted quintet gene trees  and returns the highest-scoring rooted species tree.
 
@@ -16,9 +16,9 @@ $ git clone https://github.com/ytabatabaee/QR-STAR.git
 $ cd QR-STAR
 $ python3 -m pip install .
 ```
-For editable local development, use:
+To verify successful installation and view command-line options:
 ```
-$ python3 -m pip install -e .
+$ qrstar -h
 ```
 
 ## Usage
