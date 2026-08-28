@@ -3,6 +3,7 @@
 [![Python versions](https://img.shields.io/pypi/pyversions/qrstar)](https://pypi.org/project/qrstar/)
 [![License](https://img.shields.io/github/license/ytabatabaee/QR-STAR)](https://github.com/ytabatabaee/QR-STAR/blob/main/LICENSE)
 [![DOI](https://img.shields.io/badge/DOI-10.1089%2Fcmb.2023.0185-blue)](https://doi.org/10.1089/cmb.2023.0185)
+[![Downloads](https://img.shields.io/pepy/dt/qrstar?label=downloads)](https://pepy.tech/project/qrstar)
 
 **QR-STAR** is a statistically consistent method for rooting species trees given unrooted gene trees under the multispecies coalescent (MSC) model. It is designed for datasets with gene tree discordance due to incomplete lineage sorting (ILS). QR-STAR scores candidate rootings of an unrooted species tree using the distribution of unrooted quintet gene trees  and returns the highest-scoring rooted species tree.
 
