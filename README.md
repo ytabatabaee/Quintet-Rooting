@@ -5,11 +5,11 @@
 [![DOI](https://img.shields.io/badge/DOI-10.1089%2Fcmb.2023.0185-blue)](https://doi.org/10.1089/cmb.2023.0185)
 [![Downloads](https://img.shields.io/pepy/dt/qrstar?label=downloads)](https://pepy.tech/project/qrstar)
 
-**QR-STAR** is a statistically consistent method for rooting species trees given unrooted gene trees under the multispecies coalescent (MSC) model. It can be applied to datasets with gene tree discordance due to incomplete lineage sorting and gene duplication and loss (with [DISCO](https://github.com/jsdoublel/DISCO) decomposition). QR-STAR scores candidate rootings of an unrooted species tree using the distribution of unrooted quintet gene subtrees and returns the highest-scoring rooted species tree.
+**QR-STAR** is a statistically consistent method for rooting species trees given unrooted gene trees under the multispecies coalescent (MSC) model. It can be applied to datasets with gene tree discordance due to incomplete lineage sorting and gene duplication and loss (with [DISCO](https://github.com/jsdoublel/DISCO) integration). QR-STAR scores candidate rootings of an unrooted species tree using the distribution of unrooted quintet gene subtrees and returns the highest-scoring rooted species tree.
 
 > **QR-STAR is scalable to large phylogenomic datasets:** In our benchmark, it rooted species trees with **10,000 species given 1,000 gene trees in on average 21 minutes**.
 
-This repository provides the reference implementation of QR-STAR, introduced in [Tabatabaee et al., RECOMB and *Journal of Computational Biology* (2023)](https://doi.org/10.1089/cmb.2023.0185), as well as the original **Quintet Rooting (QR)** algorithm introduced in [Tabatabaee et al., *Bioinformatics* (2022)](https://doi.org/10.1093/bioinformatics/btac224) and the **DISCO+QR** pipeline for multi-copy input [Willson et al., *Bioinformatics Advances* (2023)](https://doi.org/10.1093/bioadv/vbad015). **QR-STAR is the recommended method for all new analyses.**
+This repository provides the reference implementation of QR-STAR, introduced in [Tabatabaee et al., RECOMB and *Journal of Computational Biology* (2023)](https://doi.org/10.1089/cmb.2023.0185), as well as the original **Quintet Rooting (QR)** algorithm [Tabatabaee et al., *Bioinformatics* (2022)](https://doi.org/10.1093/bioinformatics/btac224) and the **DISCO+QR** pipeline for multi-copy input [Willson et al., *Bioinformatics Advances* (2023)](https://doi.org/10.1093/bioadv/vbad015). *QR-STAR is the recommended method for all new analyses.*
 
 ## Installation
 QR-STAR is implemented in Python 3 and can be installed from PyPI:
@@ -30,7 +30,7 @@ $ qrstar -h
 
 ## Usage
 
-**Input:** A file containing a resolved unrooted species tree with at least 5 taxa and a file containing a set of unrooted single- or muli-copy gene trees (may contain missing taxa or polytomies), both in newick format (with or without branch lengths).
+**Input:** A file containing a resolved unrooted species tree with at least 5 taxa and a file containing a set of unrooted single- or muli-copy gene trees (may contain missing taxa or polytomies), both in newick format.
 
 **Output:** The rooted species tree in newick format. If `-o/--outputtree` is provided, the tree is written to that file; otherwise, it is printed to standard output. When run with `-cfs` and `-o`, an additional file contains a ranking over all rooted trees in the search space sorted according to their confidence scores.
 ```
@@ -64,9 +64,9 @@ $ qrstar -t <species-topology.tre> -g <input-genes.tre> [-o <output-tree.tre>]
 
 ### Multi-copy input
 
-QR-STAR can analyze multi-copy gene-family trees by running the integrated [DISCO](https://github.com/jsdoublel/DISCO) decomposition before the QR-STAR rooting analysis. DISCO roots and decomposes each multi-copy gene family tree, and QR-STAR runs on the resulting single-copy trees with at least 5 taxa. Missing-taxon normalization is enabled automatically in multi-copy mode.
+QR-STAR can analyze multi-copy gene-family trees by running the integrated [DISCO](https://github.com/jsdoublel/DISCO) decomposition before the QR-STAR rooting analysis. DISCO roots and decomposes each multi-copy gene family tree, and QR-STAR runs on the resulting single-copy trees with at least 5 taxa. 
 
-When an explicit gene to species mapping file is available, use the command:
+When an explicit gene-to-species mapping file is available, use the command:
 
 ```
 $ qrstar -t <species_tree.tre> -g <gene_families.tre> --multicopy --gene-species-map <gene_to_species.tsv> -o <rooted_tree.tre>
@@ -91,14 +91,14 @@ For labels such as `Homo_sapiens|ENSG001`, `--delimiter "|"` maps the gene copy 
 If both `--gene-species-map` and `--delimiter` are provided, the explicit mapping file takes precedence. Use `--save-disco-trees decomposed.tre` to retain the decomposed single-copy gene trees produced by DISCO.
 
 ## Example
-The `example` directory contains three example sets with 10, 100, and 1000 taxon species trees, each with 1000 gene trees. The commands below show examples of different modes of running QR-STAR, QR, and DISCO+QR-STAR on these datasets.
+The `example` directory contains three example sets with 10, 100, and 1000 taxon species trees, each with 1000 gene trees. The commands below show examples of running QR-STAR, QR, and DISCO+QR-STAR on these datasets.
 
 QR-STAR in default mode (*recommended*):
 ```
 $ qrstar -t ./example/avian-species-10.tre -g ./example/avian-genes-10.tre -o ./example/avian-rooted-10.tre -cfs
 $ qrstar -t ./example/s_tree.trees -g ./example/truegenetrees -o ./example/qrstar_truegenetrees.tre > ./example/qrstar_truegenetrees.log
 ```
-QR-STAR with exhaustive sampling:
+QR-STAR with exhaustive sampling (*$O(n^5)$*):
 ```
 $ qrstar -t ./example/avian-species-10.tre -g ./example/avian-genes-10.tre -o ./example/avian-rooted-10.tre -sm EXH
 ```
@@ -149,4 +149,4 @@ An earlier version of the QR-STAR work appeared at RECOMB 2023:
 Datasets used in these papers are available in the following repositories: [QR datasets](https://github.com/ytabatabaee/QR-paper),  [QR-STAR datasets](https://github.com/ytabatabaee/QR-STAR-paper), and [DISCO+QR datasets](https://databank.illinois.edu/datasets/IDB-5748609).
 
 ## Acknowledgements
-The algorithm was originally designed by Tandy Warnow and Yasamin Tabatabaee. The code is contributed by Yasamin Tabatabaee, Baqiao Liu and Kowshika Sarker. Multi-copy preprocessing adapts core DISCO decomposition functionality from the DISCO project by James Willson and contributors.
+The algorithm was originally designed by Tandy Warnow and Yasamin Tabatabaee. The code is contributed by Yasamin Tabatabaee, Baqiao Liu and Kowshika Sarker. Multi-copy preprocessing adapts core DISCO decomposition functionality from the [DISCO](https://github.com/jsdoublel/DISCO) software written by James Willson.
