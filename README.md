@@ -3,11 +3,12 @@
 [![Python versions](https://img.shields.io/pypi/pyversions/qrstar)](https://pypi.org/project/qrstar/)
 [![License](https://img.shields.io/github/license/ytabatabaee/QR-STAR)](https://github.com/ytabatabaee/QR-STAR/blob/main/LICENSE)
 [![DOI](https://img.shields.io/badge/DOI-10.1089%2Fcmb.2023.0185-blue)](https://doi.org/10.1089/cmb.2023.0185)
+[![Talk](https://img.shields.io/badge/ISMB%202022-Talk-red.svg)](https://www.youtube.com/watch?v=X5135gTpHmQ)
 [![Downloads](https://img.shields.io/pepy/dt/qrstar?label=downloads)](https://pepy.tech/project/qrstar)
 
 **QR-STAR** is a statistically consistent method for rooting species trees given unrooted gene trees under the multispecies coalescent (MSC) model. It can be applied to datasets with gene tree discordance due to incomplete lineage sorting and gene duplication and loss (with [DISCO](https://github.com/jsdoublel/DISCO) integration). QR-STAR scores candidate rootings of an unrooted species tree using the distribution of unrooted quintet gene subtrees and returns the highest-scoring rooted species tree.
 
-> **QR-STAR is scalable to large phylogenomic datasets:** In our benchmark, it rooted species trees with **10,000 species given 1,000 gene trees in on average 21 minutes**.
+> **QR-STAR is scalable to large phylogenomic datasets:** In our benchmark, it rooted species trees with **10,000 species given 1,000 gene trees in an average of 21 minutes**.
 
 This repository provides the reference implementation of QR-STAR, introduced in [Tabatabaee et al., RECOMB and *Journal of Computational Biology* (2023)](https://doi.org/10.1089/cmb.2023.0185), as well as the original **Quintet Rooting (QR)** algorithm [Tabatabaee et al., *Bioinformatics* (2022)](https://doi.org/10.1093/bioinformatics/btac224) and the **DISCO+QR** pipeline for multi-copy input [Willson et al., *Bioinformatics Advances* (2023)](https://doi.org/10.1093/bioadv/vbad015). *QR-STAR is the recommended method for all new analyses.*
 
@@ -98,7 +99,7 @@ QR-STAR in default mode (*recommended*):
 $ qrstar -t ./example/avian-species-10.tre -g ./example/avian-genes-10.tre -o ./example/avian-rooted-10.tre -cfs
 $ qrstar -t ./example/s_tree.trees -g ./example/truegenetrees -o ./example/qrstar_truegenetrees.tre > ./example/qrstar_truegenetrees.log
 ```
-QR-STAR with exhaustive sampling (*$O(n^5)$*):
+QR-STAR with exhaustive sampling (*most accurate but slow*):
 ```
 $ qrstar -t ./example/avian-species-10.tre -g ./example/avian-genes-10.tre -o ./example/avian-rooted-10.tre -sm EXH
 ```
@@ -109,7 +110,7 @@ $ qrstar -t ./example/avian-species-10.tre -g ./example/avian-genes-10.tre -o ./
 
 DISCO+QR-STAR (*for multi-copy input*):
 ```
-$ qrstar -t ./example/discoqr-species-100.tre -g ./example/discoqr-gene-families-100.tre --multicopy --delimiter "|" -o ./example/discoqr-rooted-100.tre
+$ qrstar -t ./example/discoqr-species-100.tre -g ./example/discoqr-gene-families-100.tre --multicopy --delimiter "_" -o ./example/discoqr-rooted-100.tre
 ```
 
 ## Publications
