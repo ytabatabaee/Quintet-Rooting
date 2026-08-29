@@ -16,6 +16,7 @@ dependencies = [
     "DendroPy>=4",
     "numpy",
     "table-five",
+    "treeswift",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -33,6 +34,9 @@ Repository = "https://github.com/ytabatabaee/QR-STAR"
 
 [tool.setuptools.dynamic]
 version = { attr = "qrstar.version.__version__" }
+
+[tool.setuptools]
+license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
 
 [tool.setuptools.packages.find]
 include = ["qrstar*"]
